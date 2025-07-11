@@ -1,9 +1,12 @@
+
+"use client"
+
+import { useState } from "react"
 import {
   Bell,
   CircleUser,
   Home,
   LineChart,
-  Package,
   Package2,
   ShoppingCart,
   Stethoscope,
@@ -19,7 +22,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
@@ -37,8 +38,25 @@ import { AppointmentsTab } from "@/components/dashboard/appointments-tab"
 import { DoctorsTab } from "@/components/dashboard/doctors-tab"
 import { PatientsTab } from "@/components/dashboard/patients-tab"
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
+import { cn } from "@/lib/utils"
+
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analytics";
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<TabValue>("dashboard");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as TabValue);
+  }
+
+  const navLinks = [
+    { id: "dashboard", label: "Dashboard", icon: Home },
+    { id: "appointments", label: "Appointments", icon: ShoppingCart, badge: "6" },
+    { id: "doctors", label: "Doctors", icon: Stethoscope },
+    { id: "patients", label: "Patients", icon: Users },
+    { id: "analytics", label: "Analytics", icon: LineChart },
+  ];
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -55,44 +73,24 @@ export default function Dashboard() {
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-              >
-                <Home className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                Appointments
-                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                  6
-                </Badge>
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Stethoscope className="h-4 w-4" />
-                Doctors{" "}
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Patients
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <LineChart className="h-4 w-4" />
-                Analytics
-              </Link>
+              {navLinks.map((link) => (
+                 <button
+                    key={link.id}
+                    onClick={() => handleTabChange(link.id)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                      activeTab === link.id ? "bg-muted text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <link.icon className="h-4 w-4" />
+                    {link.label}
+                    {link.badge && (
+                       <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                        {link.badge}
+                      </Badge>
+                    )}
+                  </button>
+              ))}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -134,44 +132,24 @@ export default function Dashboard() {
                   <Package2 className="h-6 w-6 text-primary" />
                   <span className="sr-only">SehaTech</span>
                 </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                >
-                  <Home className="h-5 w-5" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  Appointments
-                  <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                    6
-                  </Badge>
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Stethoscope className="h-5 w-5" />
-                  Doctors
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Patients
-                </Link>
-                <Link
-                  href="#"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <LineChart className="h-5 w-5" />
-                  Analytics
-                </Link>
+                 {navLinks.map((link) => (
+                    <button
+                      key={link.id}
+                      onClick={() => handleTabChange(link.id)}
+                      className={cn(
+                        "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
+                         activeTab === link.id ? "bg-muted text-foreground" : "text-muted-foreground"
+                      )}
+                    >
+                      <link.icon className="h-5 w-5" />
+                      {link.label}
+                      {link.badge && (
+                         <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                          {link.badge}
+                        </Badge>
+                      )}
+                    </button>
+                ))}
               </nav>
               <div className="mt-auto">
                 <Card>
@@ -212,9 +190,9 @@ export default function Dashboard() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+            <h1 className="text-lg font-semibold md:text-2xl capitalize">{activeTab}</h1>
           </div>
-          <Tabs defaultValue="dashboard" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
