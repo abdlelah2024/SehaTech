@@ -1,3 +1,7 @@
+
+"use client"
+
+import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -7,12 +11,25 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { mockAppointments } from "@/lib/mock-data"
+import { mockAppointments, mockPatients, mockDoctors } from "@/lib/mock-data"
 import { AppointmentScheduler } from "../appointment-scheduler"
+import type { Appointment } from "@/lib/types"
 
 export function AppointmentsTab() {
+  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+
+  const handleAppointmentCreated = (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
+    const newAppointment: Appointment = {
+        ...newAppointmentData,
+        id: `appt-${Date.now()}`,
+        status: 'Scheduled',
+    };
+
+    setAppointments(prev => [newAppointment, ...prev]);
+  };
+
+
   return (
     <Card className="mt-4">
        <CardHeader className="flex flex-row items-center justify-between">
@@ -20,7 +37,7 @@ export function AppointmentsTab() {
             <CardTitle>Appointments</CardTitle>
             <CardDescription>Manage and view all patient appointments.</CardDescription>
           </div>
-          <AppointmentScheduler />
+          <AppointmentScheduler onAppointmentCreated={handleAppointmentCreated} />
         </CardHeader>
       <CardContent>
         <Table>
@@ -34,7 +51,7 @@ export function AppointmentsTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockAppointments.map((appointment) => (
+            {appointments.map((appointment) => (
               <TableRow key={appointment.id}>
                 <TableCell>{appointment.patientName}</TableCell>
                 <TableCell>{appointment.doctorName}</TableCell>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -30,10 +31,18 @@ import { mockPatients, mockDoctors } from "@/lib/mock-data"
 import { suggestSlotsAction } from "@/lib/actions"
 import type { SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
 import { useToast } from "@/hooks/use-toast"
+import type { Appointment } from "@/lib/types"
 
-export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
+interface AppointmentSchedulerProps {
+  doctorId?: string;
+  onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
+}
+
+
+export function AppointmentScheduler({ doctorId, onAppointmentCreated }: AppointmentSchedulerProps) {
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId)
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>()
@@ -51,7 +60,7 @@ export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
     setIsLoadingSuggestions(true)
     setSuggestions(undefined);
     try {
-      const result = await suggestSlotsAction({ doctorId: selectedDoctorId, patientId: 'patient-1' });
+      const result = await suggestSlotsAction({ doctorId: selectedDoctorId, patientId: selectedPatientId || 'patient-1' });
       if (result.suggestedSlots.length > 0) {
         setSuggestions(result.suggestedSlots);
       } else {
@@ -80,6 +89,37 @@ export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
     setSuggestions(undefined); // Clear suggestions after selection
   }
 
+  const handleConfirmAppointment = () => {
+    if (!selectedPatientId || !selectedDoctorId || !date) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please select a patient, doctor, and date.",
+      });
+      return;
+    }
+
+    const patient = mockPatients.find(p => p.id === selectedPatientId);
+    const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
+
+    if (patient && doctor && onAppointmentCreated) {
+        onAppointmentCreated({
+            patientId: patient.id,
+            patientName: patient.name,
+            doctorId: doctor.id,
+            doctorName: `Dr. ${doctor.name}`,
+            doctorSpecialty: doctor.specialty,
+            dateTime: date.toISOString(),
+        });
+        toast({
+            title: "Appointment Scheduled!",
+            description: `Scheduled for ${patient.name} with Dr. ${doctor.name}.`,
+        });
+        setOpen(false); // Close dialog on success
+    }
+  }
+
+
   const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
 
   return (
@@ -99,7 +139,7 @@ export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
             <Label htmlFor="patient" className="text-right">
               Patient
             </Label>
-            <Select>
+            <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
               <SelectTrigger id="patient" className="col-span-3">
                 <SelectValue placeholder="Select a patient" />
               </SelectTrigger>
@@ -150,7 +190,7 @@ export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <div className="col-start-2 col-span-3">
-              <Button variant="ghost" onClick={handleGetSuggestions} disabled={isLoadingSuggestions} className="w-full justify-start gap-2 text-primary hover:text-primary">
+              <Button variant="ghost" onClick={handleGetSuggestions} disabled={isLoadingSuggestions || !selectedDoctorId || !selectedPatientId} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
                 {isLoadingSuggestions ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -183,7 +223,7 @@ export function AppointmentScheduler({ doctorId }: { doctorId?: string }) {
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Confirm Appointment</Button>
+          <Button onClick={handleConfirmAppointment}>Confirm Appointment</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
