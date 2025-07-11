@@ -13,6 +13,7 @@ import {
   Users,
   Search,
   CreditCard,
+  Menu,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -34,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import Link from "next/link"
 import { Overview } from "@/components/dashboard/overview"
 import { AppointmentsTab } from "@/components/dashboard/appointments-tab"
@@ -62,6 +63,46 @@ export default function Dashboard() {
     { id: "analytics", label: "Analytics", icon: LineChart },
   ];
 
+  const renderNavLinks = (isMobile: boolean = false) => (
+    <nav className={cn(
+      isMobile ? "grid gap-2 text-lg font-medium" : "grid items-start px-2 text-sm font-medium lg:px-4"
+    )}>
+      {isMobile && (
+        <Link
+          href="#"
+          className="flex items-center gap-2 text-lg font-semibold mb-4"
+        >
+          <Package2 className="h-6 w-6 text-primary" />
+          <span className="sr-only">SehaTech</span>
+        </Link>
+      )}
+      {navLinks.map((link) => (
+        <button
+          key={link.id}
+          onClick={() => {
+             handleTabChange(link.id)
+          }}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+             activeTab === link.id ? "bg-muted text-primary" : "text-muted-foreground",
+             isMobile && "mx-[-0.65rem] gap-4 rounded-xl",
+             isMobile && activeTab === link.id && "bg-muted text-foreground",
+             isMobile && activeTab !== link.id && "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
+          {link.label}
+          {link.badge && (
+             <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+              {link.badge}
+            </Badge>
+          )}
+        </button>
+      ))}
+    </nav>
+  );
+
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -77,26 +118,7 @@ export default function Dashboard() {
             </Button>
           </div>
           <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              {navLinks.map((link) => (
-                 <button
-                    key={link.id}
-                    onClick={() => handleTabChange(link.id)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
-                      activeTab === link.id ? "bg-muted text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <link.icon className="h-4 w-4" />
-                    {link.label}
-                    {link.badge && (
-                       <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                        {link.badge}
-                      </Badge>
-                    )}
-                  </button>
-              ))}
-            </nav>
+             {renderNavLinks()}
           </div>
           <div className="mt-auto p-4">
             <Card>
@@ -124,38 +146,12 @@ export default function Dashboard() {
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <Package2 className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Package2 className="h-6 w-6 text-primary" />
-                  <span className="sr-only">SehaTech</span>
-                </Link>
-                 {navLinks.map((link) => (
-                    <button
-                      key={link.id}
-                      onClick={() => handleTabChange(link.id)}
-                      className={cn(
-                        "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
-                         activeTab === link.id ? "bg-muted text-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      <link.icon className="h-5 w-5" />
-                      {link.label}
-                      {link.badge && (
-                         <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                          {link.badge}
-                        </Badge>
-                      )}
-                    </button>
-                ))}
-              </nav>
+               {renderNavLinks(true)}
               <div className="mt-auto">
                 <Card>
                   <CardHeader>
@@ -207,14 +203,6 @@ export default function Dashboard() {
             <h1 className="text-lg font-semibold md:text-2xl capitalize">{activeTab}</h1>
           </div>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 md:hidden">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="appointments">Appointments</TabsTrigger>
-              <TabsTrigger value="doctors">Doctors</TabsTrigger>
-              <TabsTrigger value="patients">Patients</TabsTrigger>
-              <TabsTrigger value="billing">Billing</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </TabsList>
             <TabsContent value="dashboard">
               <Overview />
             </TabsContent>
