@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -15,6 +16,7 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import type { ChartConfig } from "@/components/ui/chart"
 
 const chartData = [
   { month: "January", appointments: 186 },
@@ -30,15 +32,15 @@ const chartConfig = {
     label: "Appointments",
     color: "hsl(var(--primary))",
   },
-}
+} satisfies ChartConfig
 
 export function AnalyticsTab() {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Analytics</CardTitle>
+        <CardTitle>Appointment Analytics</CardTitle>
         <CardDescription>
-          Appointment trends over the last 6 months.
+          Trends for the last 6 months.
         </CardDescription>
       </CardHeader>
       <CardContent>
