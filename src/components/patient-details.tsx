@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -51,7 +52,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
         <DialogHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={`https://placehold.co/80x80.png?text=${getPatientInitials(patient.name)}`} data-ai-hint="person avatar" />
+              <AvatarImage src={`/avatars/${patient.name.replace(' ', '-')}.png`} data-ai-hint="person avatar" />
               <AvatarFallback className="text-2xl">{getPatientInitials(patient.name)}</AvatarFallback>
             </Avatar>
             <div>
