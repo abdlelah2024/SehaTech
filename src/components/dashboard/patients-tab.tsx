@@ -33,12 +33,17 @@ interface PatientsTabProps {
 export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [patients, setPatients] = useState<Patient[]>(mockPatients)
 
   useEffect(() => {
     setLocalSearchTerm(globalSearchTerm);
   }, [globalSearchTerm]);
 
-  const filteredPatients = mockPatients.filter((patient) =>
+  const handlePatientCreated = (newPatient: Patient) => {
+    setPatients(prevPatients => [newPatient, ...prevPatients]);
+  };
+
+  const filteredPatients = patients.filter((patient) =>
     patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
     patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())
   )
@@ -66,7 +71,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
             />
-            <AppointmentScheduler context="new-patient" />
+            <AppointmentScheduler context="new-patient" onPatientCreated={handlePatientCreated} />
           </div>
         </CardHeader>
         <CardContent>

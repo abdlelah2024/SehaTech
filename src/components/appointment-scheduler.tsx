@@ -31,16 +31,17 @@ import { mockPatients, mockDoctors } from "@/lib/mock-data"
 import { suggestSlotsAction } from "@/lib/actions"
 import type { SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
 import { useToast } from "@/hooks/use-toast"
-import type { Appointment } from "@/lib/types"
+import type { Appointment, Patient } from "@/lib/types"
 
 interface AppointmentSchedulerProps {
   doctorId?: string;
   onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
+  onPatientCreated?: (patient: Patient) => void;
   context?: 'new-patient' | 'new-appointment';
 }
 
 
-export function AppointmentScheduler({ doctorId, onAppointmentCreated, context = 'new-appointment' }: AppointmentSchedulerProps) {
+export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatientCreated, context = 'new-appointment' }: AppointmentSchedulerProps) {
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
@@ -48,6 +49,14 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, context =
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>()
   const { toast } = useToast()
+
+  // State for new patient form
+  const [newPatientName, setNewPatientName] = useState("")
+  const [newPatientEmail, setNewPatientEmail] = useState("")
+  const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
+  const [newPatientPhone, setNewPatientPhone] = useState("")
+  const [newPatientAddress, setNewPatientAddress] = useState("")
+
 
   const handleGetSuggestions = async () => {
     if (!selectedDoctorId) {
@@ -121,12 +130,39 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, context =
   }
 
   const handleCreatePatient = () => {
-    // Logic to create a new patient will go here
-    toast({
-      title: "Patient Created!",
-      description: "The new patient record has been created.",
-    });
-    setOpen(false);
+    if (!newPatientName || !newPatientEmail || !newPatientDob) {
+       toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please fill in all required fields (Name, Email, DOB).",
+      });
+      return;
+    }
+
+    if (onPatientCreated) {
+        const newPatient: Patient = {
+            id: `patient-${Date.now()}`,
+            name: newPatientName,
+            email: newPatientEmail,
+            dob: format(newPatientDob, "yyyy-MM-dd"),
+            gender: 'Other', // Defaulting gender
+            phone: newPatientPhone,
+            address: newPatientAddress,
+        };
+        onPatientCreated(newPatient);
+        toast({
+            title: "Patient Created!",
+            description: `The record for ${newPatientName} has been created.`,
+        });
+
+        // Reset form and close
+        setNewPatientName("");
+        setNewPatientEmail("");
+        setNewPatientDob(undefined);
+        setNewPatientPhone("");
+        setNewPatientAddress("");
+        setOpen(false);
+    }
   }
 
 
@@ -157,11 +193,11 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, context =
           <div className="grid gap-4 py-4">
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Full Name</Label>
-              <Input id="name" placeholder="John Doe" className="col-span-3" />
+              <Input id="name" placeholder="John Doe" className="col-span-3" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" placeholder="john.doe@example.com" className="col-span-3" />
+              <Input id="email" type="email" placeholder="john.doe@example.com" className="col-span-3" value={newPatientEmail} onChange={(e) => setNewPatientEmail(e.target.value)} />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="dob" className="text-right">Date of Birth</Label>
@@ -171,18 +207,18 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, context =
                       variant={"outline"}
                       className={cn(
                         "col-span-3 justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
+                        !newPatientDob && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      {newPatientDob ? format(newPatientDob, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={date}
-                      onSelect={setDate}
+                      selected={newPatientDob}
+                      onSelect={setNewPatientDob}
                       initialFocus
                       captionLayout="dropdown-buttons"
                       fromYear={1930}
@@ -193,11 +229,11 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, context =
               </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="phone" className="text-right">Phone</Label>
-              <Input id="phone" type="tel" placeholder="555-0101" className="col-span-3" />
+              <Input id="phone" type="tel" placeholder="555-0101" className="col-span-3" value={newPatientPhone} onChange={(e) => setNewPatientPhone(e.target.value)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="address" className="text-right">Address</Label>
-              <Input id="address" placeholder="123 Maple St, Springfield" className="col-span-3" />
+              <Input id="address" placeholder="123 Maple St, Springfield" className="col-span-3" value={newPatientAddress} onChange={(e) => setNewPatientAddress(e.target.value)} />
             </div>
           </div>
         ) : (
