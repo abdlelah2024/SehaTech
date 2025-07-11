@@ -79,15 +79,20 @@ export function Overview() {
       </div>
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>An overview of the latest activities in the system.</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>An overview of the latest activities in the system.</CardDescription>
+            </div>
+            <Activity className="h-5 w-5 text-muted-foreground" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {mockRecentActivities.map((activity) => (
               <div key={activity.id} className="flex items-start gap-4">
                  <Avatar className="h-9 w-9">
-                  <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(activity.actor)}`} data-ai-hint="person avatar" />
+                  <AvatarImage src={`/avatars/${activity.actor.toLowerCase().replace(' ', '-')}.png`} data-ai-hint="person avatar" />
                   <AvatarFallback>{getPatientInitials(activity.actor)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
