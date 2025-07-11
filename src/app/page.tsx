@@ -42,9 +42,11 @@ type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analyti
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabValue>("dashboard");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TabValue);
+    setIsSheetOpen(false); // Close sheet on tab change
   }
 
   const navLinks = [
@@ -117,7 +119,7 @@ export default function Dashboard() {
       </div>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
