@@ -43,7 +43,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
 
 
   return (
-    <Card className="mt-4">
+    <Card>
        <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Appointments</CardTitle>
