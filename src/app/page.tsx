@@ -193,7 +193,7 @@ export default function Dashboard() {
             <h1 className="text-lg font-semibold md:text-2xl capitalize">{activeTab}</h1>
           </div>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-5 md:hidden">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
