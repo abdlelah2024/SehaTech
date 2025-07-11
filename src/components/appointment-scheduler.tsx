@@ -120,7 +120,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated }: Appoint
   }
 
 
-  const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
   const getButtonText = () => {
     if (doctorId) return 'Book Appointment';
     // If it's not tied to a specific doctor (like on the Doctors tab), check if it's on the Patients tab.
