@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,25 +21,61 @@ import {
 import { mockDoctors } from "@/lib/mock-data"
 import Image from "next/image"
 import { AppointmentScheduler } from "../appointment-scheduler"
+import { X } from "lucide-react"
 
 export function DoctorsTab() {
-  const specialties = [...new Set(mockDoctors.map(d => d.specialty))];
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedSpecialty, setSelectedSpecialty] = useState("")
+  const specialties = [...new Set(mockDoctors.map((d) => d.specialty))]
+
+  const filteredDoctors = mockDoctors.filter((doctor) => {
+    const matchesSearch = doctor.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+    const matchesSpecialty = selectedSpecialty
+      ? doctor.specialty === selectedSpecialty
+      : true
+    return matchesSearch && matchesSpecialty
+  })
+
+  const handleClearFilters = () => {
+    setSearchTerm("")
+    setSelectedSpecialty("")
+  }
+
+  const showClearButton = searchTerm || selectedSpecialty
 
   return (
     <div className="mt-4">
       <div className="flex items-center gap-4 mb-4">
-        <Input placeholder="Search doctors..." className="max-w-sm" />
-        <Select>
+        <Input
+          placeholder="Search doctors..."
+          className="max-w-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by specialty" />
           </SelectTrigger>
           <SelectContent>
-            {specialties.map(s => <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>)}
+            <SelectItem value="">All Specialties</SelectItem>
+            {specialties.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+        {showClearButton && (
+          <Button variant="ghost" onClick={handleClearFilters}>
+            <X className="mr-2 h-4 w-4" />
+            Clear
+          </Button>
+        )}
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {mockDoctors.map((doctor) => (
+        {filteredDoctors.map((doctor) => (
           <Card key={doctor.id}>
             <CardHeader>
               <div className="flex items-center gap-4">
