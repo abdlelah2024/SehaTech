@@ -162,9 +162,9 @@ export const mockRecentActivities: RecentActivity[] = [
 ];
 
 export const mockTransactions: Transaction[] = [
-  { id: 'txn-1', patientId: 'patient-2', patientName: 'Jane Smith', date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 150.00, status: 'Success' },
-  { id: 'txn-2', patientId: 'patient-1', patientName: 'John Doe', date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 200.00, status: 'Success' },
-  { id: 'txn-3', patientId: 'patient-5', patientName: 'David Williams', date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 75.50, status: 'Success' },
-  { id: 'txn-4', patientId: 'patient-3', patientName: 'Peter Jones', date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 110.00, status: 'Failed' },
-  { id: 'txn-5', patientId: 'patient-4', patientName: 'Mary Johnson', date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 300.00, status: 'Success' },
+  { id: 'txn-1', patientId: 'patient-2', patientName: 'Jane Smith', date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 150.00, status: 'Success', service: 'Dermatology Checkup' },
+  { id: 'txn-2', patientId: 'patient-1', patientName: 'John Doe', date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 200.00, status: 'Success', service: 'Follow-up Visit' },
+  { id: 'txn-3', patientId: 'patient-5', patientName: 'David Williams', date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 75.50, status: 'Success', service: 'X-Ray' },
+  { id: 'txn-4', patientId: 'patient-3', patientName: 'Peter Jones', date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 110.00, status: 'Failed', service: 'Vaccination' },
+  { id: 'txn-5', patientId: 'patient-4', patientName: 'Mary Johnson', date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 300.00, status: 'Success', service: 'ECG' },
 ];

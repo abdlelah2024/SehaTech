@@ -46,4 +46,5 @@ export interface Transaction {
   date: string;
   amount: number;
   status: 'Success' | 'Failed';
+  service?: string;
 }
