@@ -7,13 +7,14 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { mockDoctors, mockPatients, mockRecentActivities, mockTransactions } from "@/lib/mock-data"
+import { mockDoctors, mockPatients, mockRecentActivities, mockTransactions, mockAppointments } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getPatientInitials } from "@/lib/utils"
 
 export function Overview() {
   const totalPatients = mockPatients.length;
   const activeDoctors = mockDoctors.filter(d => d.isAvailableToday).length;
+  const newAppointments = mockAppointments.filter(a => a.status === 'Scheduled').length;
   const totalRevenue = mockTransactions
     .filter(t => t.status === 'Success')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -55,7 +56,7 @@ export function Overview() {
             <CalendarPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
+            <div className="text-2xl font-bold">+{newAppointments}</div>
             <p className="text-xs text-muted-foreground">
               +19% from last month
             </p>
