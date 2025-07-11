@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -25,12 +26,21 @@ import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
 import type { Patient } from "@/lib/types"
 
-export function PatientsTab() {
-  const [searchTerm, setSearchTerm] = useState("")
+interface PatientsTabProps {
+  searchTerm: string;
+}
+
+export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) {
+  const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
+  useEffect(() => {
+    setLocalSearchTerm(globalSearchTerm);
+  }, [globalSearchTerm]);
+
   const filteredPatients = mockPatients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase())
+    patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
+    patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())
   )
 
   const getPatientAppointmentCount = (patientId: string) => {
@@ -53,8 +63,8 @@ export function PatientsTab() {
             <Input
               placeholder="Search patients..."
               className="max-w-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
             />
             <AppointmentScheduler />
           </div>

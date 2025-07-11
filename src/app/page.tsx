@@ -48,6 +48,7 @@ type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analyti
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabValue>("dashboard");
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TabValue);
@@ -146,6 +147,8 @@ export default function Dashboard() {
                   type="search"
                   placeholder="Search..."
                   className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                  value={globalSearchTerm}
+                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
                 />
               </div>
             </form>
@@ -176,16 +179,16 @@ export default function Dashboard() {
               <Overview />
             </TabsContent>
             <TabsContent value="appointments">
-              <AppointmentsTab />
+              <AppointmentsTab searchTerm={globalSearchTerm} />
             </TabsContent>
             <TabsContent value="doctors">
-              <DoctorsTab />
+              <DoctorsTab searchTerm={globalSearchTerm} />
             </TabsContent>
             <TabsContent value="patients">
-              <PatientsTab />
+              <PatientsTab searchTerm={globalSearchTerm} />
             </TabsContent>
             <TabsContent value="billing">
-              <BillingTab />
+              <BillingTab searchTerm={globalSearchTerm} />
             </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab />

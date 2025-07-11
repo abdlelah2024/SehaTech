@@ -1,4 +1,7 @@
 
+"use client";
+
+import { useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -11,7 +14,19 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { mockTransactions } from "@/lib/mock-data"
 
-export function BillingTab() {
+interface BillingTabProps {
+  searchTerm: string;
+}
+
+export function BillingTab({ searchTerm }: BillingTabProps) {
+
+  const filteredTransactions = useMemo(() => {
+    return mockTransactions.filter(transaction =>
+      transaction.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
   return (
     <Card className="mt-4">
        <CardHeader>
@@ -30,7 +45,7 @@ export function BillingTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTransactions.map((transaction) => (
+            {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
                 <TableCell className="font-mono text-xs">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>

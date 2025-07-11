@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -12,11 +12,15 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { mockAppointments, mockPatients, mockDoctors } from "@/lib/mock-data"
+import { mockAppointments } from "@/lib/mock-data"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import type { Appointment } from "@/lib/types"
 
-export function AppointmentsTab() {
+interface AppointmentsTabProps {
+  searchTerm: string;
+}
+
+export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
 
   const handleAppointmentCreated = (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
@@ -28,6 +32,14 @@ export function AppointmentsTab() {
 
     setAppointments(prev => [newAppointment, ...prev]);
   };
+
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter(appointment =>
+      appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.doctorSpecialty.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [appointments, searchTerm]);
 
 
   return (
@@ -51,7 +63,7 @@ export function AppointmentsTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {appointments.map((appointment) => (
+            {filteredAppointments.map((appointment) => (
               <TableRow key={appointment.id}>
                 <TableCell>{appointment.patientName}</TableCell>
                 <TableCell>{appointment.doctorName}</TableCell>

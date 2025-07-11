@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -23,15 +24,24 @@ import Image from "next/image"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { X } from "lucide-react"
 
-export function DoctorsTab() {
-  const [searchTerm, setSearchTerm] = useState("")
+interface DoctorsTabProps {
+  searchTerm: string;
+}
+
+export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
+  const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("")
   const specialties = [...new Set(mockDoctors.map((d) => d.specialty))]
+
+  useEffect(() => {
+    setLocalSearchTerm(globalSearchTerm);
+  }, [globalSearchTerm]);
+
 
   const filteredDoctors = mockDoctors.filter((doctor) => {
     const matchesSearch = doctor.name
       .toLowerCase()
-      .includes(searchTerm.toLowerCase())
+      .includes(localSearchTerm.toLowerCase())
     const matchesSpecialty = selectedSpecialty
       ? doctor.specialty === selectedSpecialty
       : true
@@ -39,11 +49,11 @@ export function DoctorsTab() {
   })
 
   const handleClearFilters = () => {
-    setSearchTerm("")
+    setLocalSearchTerm("")
     setSelectedSpecialty("")
   }
 
-  const showClearButton = searchTerm || selectedSpecialty
+  const showClearButton = localSearchTerm || selectedSpecialty
 
   return (
     <div className="mt-4">
@@ -51,8 +61,8 @@ export function DoctorsTab() {
         <Input
           placeholder="Search doctors..."
           className="max-w-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={localSearchTerm}
+          onChange={(e) => setLocalSearchTerm(e.target.value)}
         />
         <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
           <SelectTrigger className="w-[180px]">
