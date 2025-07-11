@@ -116,23 +116,8 @@ export default function Dashboard() {
               <span className="sr-only">Toggle notifications</span>
             </Button>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 overflow-auto py-2">
              {renderNavLinks()}
-          </div>
-          <div className="mt-auto p-4">
-            <Card>
-              <CardHeader className="p-2 pt-0 md:p-4">
-                <CardTitle>App Updates</CardTitle>
-                <CardDescription>
-                  New features and improvements are now available.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
-                  See What's New
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
@@ -151,21 +136,6 @@ export default function Dashboard() {
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
                {renderNavLinks(true)}
-              <div className="mt-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>App Updates</CardTitle>
-                    <CardDescription>
-                      New features and improvements are now available.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button size="sm" className="w-full">
-                      See What's New
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
