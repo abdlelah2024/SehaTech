@@ -35,6 +35,8 @@ import Link from "next/link"
 import { Overview } from "@/components/dashboard/overview"
 import { AppointmentsTab } from "@/components/dashboard/appointments-tab"
 import { DoctorsTab } from "@/components/dashboard/doctors-tab"
+import { PatientsTab } from "@/components/dashboard/patients-tab"
+import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
 
 export default function Dashboard() {
   return (
@@ -213,10 +215,12 @@ export default function Dashboard() {
             <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
           </div>
           <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
+              <TabsTrigger value="patients">Patients</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
               <Overview />
@@ -226,6 +230,12 @@ export default function Dashboard() {
             </TabsContent>
             <TabsContent value="doctors">
               <DoctorsTab />
+            </TabsContent>
+            <TabsContent value="patients">
+              <PatientsTab />
+            </TabsContent>
+            <TabsContent value="analytics">
+              <AnalyticsTab />
             </TabsContent>
           </Tabs>
         </main>

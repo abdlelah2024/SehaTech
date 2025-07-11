@@ -4,6 +4,9 @@ export const mockPatients: Patient[] = [
   { id: 'patient-1', name: 'John Doe', email: 'john.doe@example.com' },
   { id: 'patient-2', name: 'Jane Smith', email: 'jane.smith@example.com' },
   { id: 'patient-3', name: 'Peter Jones', email: 'peter.jones@example.com' },
+  { id: 'patient-4', name: 'Mary Johnson', email: 'mary.j@example.com' },
+  { id: 'patient-5', name: 'David Williams', email: 'd.williams@example.com' },
+  { id: 'patient-6', name: 'Linda Brown', email: 'linda.brown@example.com' },
 ];
 
 export const mockDoctors: Doctor[] = [
@@ -108,5 +111,25 @@ export const mockAppointments: Appointment[] = [
     doctorSpecialty: 'Dermatology',
     dateTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
     status: 'Follow-up',
+  },
+  {
+    id: 'appt-6',
+    patientId: 'patient-4',
+    patientName: 'Mary Johnson',
+    doctorId: 'doctor-1',
+    doctorName: 'Dr. Emily Carter',
+    doctorSpecialty: 'Cardiology',
+    dateTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Scheduled',
+  },
+   {
+    id: 'appt-7',
+    patientId: 'patient-5',
+    patientName: 'David Williams',
+    doctorId: 'doctor-4',
+    doctorName: 'Dr. William Rodriguez',
+    doctorSpecialty: 'Orthopedics',
+    dateTime: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Completed',
   },
 ];
