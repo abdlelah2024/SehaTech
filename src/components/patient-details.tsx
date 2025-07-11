@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,11 @@ import { mockAppointments } from "@/lib/mock-data"
 import type { Patient, Appointment } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
 import { Separator } from "./ui/separator"
-import { Cake, VenetianMask, Phone, Home } from "lucide-react"
+import { Cake, VenetianMask, Phone, Home, Sparkles, Loader2 } from "lucide-react"
+import { Button } from "./ui/button"
+import { getPatientSummaryAction } from "@/lib/actions"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "./ui/skeleton"
 
 interface PatientDetailsProps {
   patient: Patient
@@ -31,6 +36,10 @@ interface PatientDetailsProps {
 }
 
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false)
+  const { toast } = useToast()
+
   const patientAppointments = mockAppointments.filter(
     (appointment) => appointment.patientId === patient.id
   ).sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
@@ -46,8 +55,32 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     return age;
   }
 
+  const handleGenerateSummary = async () => {
+    setIsLoadingSummary(true)
+    setSummary(null)
+    try {
+      const result = await getPatientSummaryAction(patient)
+      setSummary(result)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "AI Error",
+        description: "Could not generate patient summary. Please try again.",
+      })
+      console.error(error)
+    } finally {
+      setIsLoadingSummary(false)
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      onOpenChange(open);
+      if (!open) {
+        setSummary(null);
+        setIsLoadingSummary(false);
+      }
+    }}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <div className="flex items-center gap-4">
@@ -61,7 +94,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             </div>
           </div>
         </DialogHeader>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
             <div>
                 <h3 className="text-lg font-semibold mb-3">Patient Information</h3>
                 <div className="space-y-3 text-sm">
@@ -83,7 +116,31 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                    </div>
                 </div>
             </div>
-            <div>
+             <div>
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold">AI Summary</h3>
+                     <Button variant="ghost" size="sm" onClick={handleGenerateSummary} disabled={isLoadingSummary}>
+                        {isLoadingSummary ? (
+                            <Loader2 className="animate-spin" />
+                        ) : (
+                            <Sparkles />
+                        )}
+                        Generate
+                    </Button>
+                </div>
+                 <div className="text-sm text-muted-foreground border rounded-md p-3 min-h-[100px] bg-muted/20">
+                    {isLoadingSummary && (
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-[90%]" />
+                            <Skeleton className="h-4 w-[80%]" />
+                            <Skeleton className="h-4 w-[85%]" />
+                        </div>
+                    )}
+                    {summary && <p>{summary}</p>}
+                    {!summary && !isLoadingSummary && <p>Click "Generate" to create an AI-powered summary of this patient's history.</p>}
+                 </div>
+            </div>
+            <div className="md:col-span-2">
                 <h3 className="text-lg font-semibold mb-2">Appointment History</h3>
                 <div className="max-h-60 overflow-y-auto border rounded-md">
                   <Table>
