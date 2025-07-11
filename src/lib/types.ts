@@ -2,6 +2,10 @@ export interface Patient {
   id: string;
   name: string;
   email: string;
+  dob: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone: string;
+  address: string;
 }
 
 export interface Doctor {

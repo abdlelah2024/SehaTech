@@ -1,12 +1,12 @@
 import type { Patient, Doctor, Appointment, RecentActivity, Transaction } from "./types";
 
 export const mockPatients: Patient[] = [
-  { id: 'patient-1', name: 'John Doe', email: 'john.doe@example.com' },
-  { id: 'patient-2', name: 'Jane Smith', email: 'jane.smith@example.com' },
-  { id: 'patient-3', name: 'Peter Jones', email: 'peter.jones@example.com' },
-  { id: 'patient-4', name: 'Mary Johnson', email: 'mary.j@example.com' },
-  { id: 'patient-5', name: 'David Williams', email: 'd.williams@example.com' },
-  { id: 'patient-6', name: 'Linda Brown', email: 'linda.brown@example.com' },
+  { id: 'patient-1', name: 'John Doe', email: 'john.doe@example.com', dob: '1985-05-20', gender: 'Male', phone: '555-0101', address: '123 Maple St, Springfield' },
+  { id: 'patient-2', name: 'Jane Smith', email: 'jane.smith@example.com', dob: '1992-08-15', gender: 'Female', phone: '555-0102', address: '456 Oak Ave, Springfield' },
+  { id: 'patient-3', name: 'Peter Jones', email: 'peter.jones@example.com', dob: '1978-11-30', gender: 'Male', phone: '555-0103', address: '789 Pine Ln, Springfield' },
+  { id: 'patient-4', name: 'Mary Johnson', email: 'mary.j@example.com', dob: '2001-02-10', gender: 'Female', phone: '555-0104', address: '101 Elm Ct, Springfield' },
+  { id: 'patient-5', name: 'David Williams', email: 'd.williams@example.com', dob: '1995-07-22', gender: 'Male', phone: '555-0105', address: '212 Birch Rd, Springfield' },
+  { id: 'patient-6', name: 'Linda Brown', email: 'linda.brown@example.com', dob: '1988-03-12', gender: 'Female', phone: '555-0106', address: '333 Cedar Dr, Springfield' },
 ];
 
 export const mockDoctors: Doctor[] = [
