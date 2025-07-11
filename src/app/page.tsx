@@ -8,7 +8,7 @@ import {
   Home,
   LineChart,
   Package2,
-  ShoppingCart,
+  CalendarDays,
   Stethoscope,
   Users,
 } from "lucide-react"
@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   const navLinks = [
     { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "appointments", label: "Appointments", icon: ShoppingCart, badge: "6" },
+    { id: "appointments", label: "Appointments", icon: CalendarDays, badge: "6" },
     { id: "doctors", label: "Doctors", icon: Stethoscope },
     { id: "patients", label: "Patients", icon: Users },
     { id: "analytics", label: "Analytics", icon: LineChart },
