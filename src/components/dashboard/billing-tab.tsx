@@ -34,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
+import { Loader2, Sparkles } from "lucide-react";
+import { suggestServiceAction } from "@/lib/actions";
 
 
 interface BillingTabProps {
@@ -47,6 +49,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [amount, setAmount] = useState("");
   const [service, setService] = useState("");
   const { toast } = useToast();
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
 
   const handleRecordTransaction = () => {
@@ -87,6 +90,31 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   }
 
 
+  const handleSuggestService = async () => {
+    if (!selectedPatientId) return;
+    setIsSuggesting(true);
+    try {
+      const result = await suggestServiceAction({ patientId: selectedPatientId });
+      if (result.service) {
+        setService(result.service);
+      } else {
+        toast({
+          title: "No Suggestion",
+          description: "Could not suggest a service for this patient.",
+        })
+      }
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "AI Error",
+        description: "Could not get suggestion. Please try again.",
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+
   const filteredTransactions = useMemo(() => {
     if (!searchTerm) return transactions;
     return transactions.filter(transaction =>
@@ -102,7 +130,14 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
             <CardTitle>Billing</CardTitle>
             <CardDescription>View and manage all financial transactions.</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setSelectedPatientId(undefined);
+              setAmount("");
+              setService("");
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>Record Transaction</Button>
             </DialogTrigger>
@@ -130,6 +165,18 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="service" className="text-right">Service</Label>
                   <Input id="service" placeholder="e.g. Annual Checkup" className="col-span-3" value={service} onChange={(e) => setService(e.target.value)} />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <div className="col-start-2 col-span-3">
+                    <Button variant="ghost" onClick={handleSuggestService} disabled={!selectedPatientId || isSuggesting} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
+                      {isSuggesting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      Suggest service with AI
+                    </Button>
+                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="amount" className="text-right">Amount ($)</Label>

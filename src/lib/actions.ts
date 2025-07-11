@@ -1,3 +1,4 @@
+
 "use server"
 
 import {
@@ -8,6 +9,10 @@ import {
   suggestOptimalAppointmentSlots,
   type SuggestOptimalAppointmentSlotsInput,
 } from "@/ai/flows/suggest-optimal-appointment-slots"
+import {
+  suggestBillingService,
+  type SuggestBillingServiceInput,
+} from "@/ai/flows/suggest-billing-service"
 import { mockAppointments, mockDoctors } from "./mock-data"
 import type { Patient } from "./types"
 
@@ -76,5 +81,39 @@ export async function getPatientSummaryAction(patient: Patient) {
   } catch (error) {
     console.error("Error getting patient summary:", error)
     throw new Error("Failed to generate patient summary.")
+  }
+}
+
+
+export async function suggestServiceAction(
+  input: Pick<SuggestBillingServiceInput, "patientId">
+) {
+  const { patientId } = input;
+
+  const recentAppointments = mockAppointments
+    .filter((a) => a.patientId === patientId)
+    .sort((a,b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
+    .slice(0, 5) // Get the 5 most recent appointments
+    .map(a => ({
+      doctorSpecialty: a.doctorSpecialty,
+      dateTime: a.dateTime,
+      status: a.status
+    }));
+
+  if (recentAppointments.length === 0) {
+    return { service: "" };
+  }
+
+  const aiInput: SuggestBillingServiceInput = {
+    patientId,
+    recentAppointments,
+  };
+
+  try {
+    const result = await suggestBillingService(aiInput);
+    return result;
+  } catch (error) {
+    console.error("Error suggesting billing service:", error);
+    throw new Error("Failed to suggest billing service.");
   }
 }
