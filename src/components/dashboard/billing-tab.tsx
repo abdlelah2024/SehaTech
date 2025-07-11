@@ -21,6 +21,7 @@ interface BillingTabProps {
 export function BillingTab({ searchTerm }: BillingTabProps) {
 
   const filteredTransactions = useMemo(() => {
+    if (!searchTerm) return mockTransactions;
     return mockTransactions.filter(transaction =>
       transaction.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
