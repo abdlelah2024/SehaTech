@@ -121,11 +121,20 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated }: Appoint
 
 
   const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
+  const getButtonText = () => {
+    if (doctorId) return 'Book Appointment';
+    // If it's not tied to a specific doctor (like on the Doctors tab), check if it's on the Patients tab.
+    // A bit of a heuristic, but for this app it works. If onAppointmentCreated is not provided, it's likely the "New Patient" context.
+    // In a larger app, we might pass an explicit prop.
+    if (!onAppointmentCreated) return 'New Patient';
+    return 'New Appointment';
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">{doctorId ? 'Book Appointment' : 'New Appointment'}</Button>
+        <Button className="w-full">{getButtonText()}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
