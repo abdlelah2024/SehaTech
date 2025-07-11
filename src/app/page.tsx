@@ -7,9 +7,8 @@ import {
   CircleUser,
   Home,
   LineChart,
-  Package2,
-  CalendarDays,
   Stethoscope,
+  CalendarDays,
   Users,
   Search,
   CreditCard,
@@ -72,7 +71,7 @@ export default function Dashboard() {
           href="#"
           className="flex items-center gap-2 text-lg font-semibold mb-4"
         >
-          <Package2 className="h-6 w-6 text-primary" />
+          <Stethoscope className="h-6 w-6 text-primary" />
           <span className="sr-only">SehaTech</span>
         </Link>
       )}
@@ -109,7 +108,7 @@ export default function Dashboard() {
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Package2 className="h-6 w-6 text-primary" />
+              <Stethoscope className="h-6 w-6 text-primary" />
               <span className="">SehaTech</span>
             </Link>
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
