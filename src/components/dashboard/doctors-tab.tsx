@@ -30,7 +30,7 @@ interface DoctorsTabProps {
 
 export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState("")
-  const [selectedSpecialty, setSelectedSpecialty] = useState("")
+  const [selectedSpecialty, setSelectedSpecialty] = useState("all")
   const specialties = [...new Set(mockDoctors.map((d) => d.specialty))]
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
     const matchesSearch = doctor.name
       .toLowerCase()
       .includes(localSearchTerm.toLowerCase())
-    const matchesSpecialty = selectedSpecialty
+    const matchesSpecialty = selectedSpecialty !== "all"
       ? doctor.specialty === selectedSpecialty
       : true
     return matchesSearch && matchesSpecialty
@@ -50,10 +50,10 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
 
   const handleClearFilters = () => {
     setLocalSearchTerm("")
-    setSelectedSpecialty("")
+    setSelectedSpecialty("all")
   }
 
-  const showClearButton = localSearchTerm || selectedSpecialty
+  const showClearButton = localSearchTerm || selectedSpecialty !== "all"
 
   return (
     <div className="mt-4">
@@ -69,7 +69,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
             <SelectValue placeholder="Filter by specialty" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Specialties</SelectItem>
+            <SelectItem value="all">All Specialties</SelectItem>
             {specialties.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
