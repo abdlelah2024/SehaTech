@@ -18,7 +18,7 @@ export interface Doctor {
 }
 
 export interface Appointment {
-  id: string;
+  id:string;
   patientId: string;
   patientName: string;
   doctorId: string;
@@ -26,4 +26,11 @@ export interface Appointment {
   doctorSpecialty: string;
   dateTime: string;
   status: 'Scheduled' | 'Waiting' | 'Completed' | 'Follow-up';
+}
+
+export interface RecentActivity {
+  id: string;
+  actor: string;
+  action: string;
+  timestamp: string;
 }

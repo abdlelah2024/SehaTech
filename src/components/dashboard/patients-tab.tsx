@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { mockPatients, mockAppointments } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AppointmentScheduler } from "../appointment-scheduler"
+import { getPatientInitials } from "@/lib/utils"
 
 export function PatientsTab() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -28,13 +29,6 @@ export function PatientsTab() {
   const filteredPatients = mockPatients.filter((patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const getPatientInitials = (name: string) => {
-    const names = name.split(" ")
-    return names.length > 1
-      ? `${names[0][0]}${names[names.length - 1][0]}`
-      : names[0][0]
-  }
 
   const getPatientAppointmentCount = (patientId: string) => {
     return mockAppointments.filter(

@@ -1,4 +1,4 @@
-import type { Patient, Doctor, Appointment } from "./types";
+import type { Patient, Doctor, Appointment, RecentActivity } from "./types";
 
 export const mockPatients: Patient[] = [
   { id: 'patient-1', name: 'John Doe', email: 'john.doe@example.com' },
@@ -131,5 +131,32 @@ export const mockAppointments: Appointment[] = [
     doctorSpecialty: 'Orthopedics',
     dateTime: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     status: 'Completed',
+  },
+];
+
+export const mockRecentActivities: RecentActivity[] = [
+  {
+    id: 'act-1',
+    actor: 'John Doe',
+    action: 'scheduled a new appointment with Dr. Emily Carter.',
+    timestamp: '2 minutes ago',
+  },
+  {
+    id: 'act-2',
+    actor: 'Jane Smith',
+    action: 'had a completed appointment with Dr. Benjamin Lee.',
+    timestamp: '1 hour ago',
+  },
+  {
+    id: 'act-3',
+    actor: 'Admin',
+    action: 'updated the profile for patient Mary Johnson.',
+    timestamp: '3 hours ago',
+  },
+  {
+    id: 'act-4',
+    actor: 'Dr. Olivia Garcia',
+    action: 'added new availability for next week.',
+    timestamp: '1 day ago',
   },
 ];
