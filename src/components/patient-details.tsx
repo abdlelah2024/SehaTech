@@ -78,15 +78,19 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
   }
 
   useEffect(() => {
+    // Only generate summary if the dialog is open for a patient
+    // and a summary hasn't been generated for them yet in this session.
     if (isOpen && patient && !summary) {
         handleGenerateSummary();
     }
-  }, [isOpen, patient, summary]);
+     // Intentionally not adding `summary` to dependency array to cache result
+  }, [isOpen, patient]);
 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       onOpenChange(open);
+      // If dialog is closing, clear the summary for next time
       if (!open) {
         setSummary(null);
         setIsLoadingSummary(false);
@@ -133,11 +137,11 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                         <h3 className="text-lg font-semibold">AI Summary</h3>
                          <Button variant="ghost" size="sm" onClick={handleGenerateSummary} disabled={isLoadingSummary}>
                             {isLoadingSummary ? (
-                                <Loader2 className="animate-spin" />
+                                <Loader2 className="animate-spin h-4 w-4" />
                             ) : (
-                                <Sparkles />
+                                <Sparkles className="h-4 w-4" />
                             )}
-                            Regenerate
+                            <span className="sr-only">Regenerate</span>
                         </Button>
                     </div>
                      <div className="text-sm text-muted-foreground border rounded-md p-3 min-h-[120px] bg-muted/20">
@@ -149,7 +153,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             </div>
                         )}
                         {summary && <p>{summary}</p>}
-                        {!summary && !isLoadingSummary && <p>Click "Regenerate" to create a new AI-powered summary.</p>}
+                        {!summary && !isLoadingSummary && <p>Click the sparkles to generate an AI-powered summary.</p>}
                      </div>
                 </div>
             </div>
