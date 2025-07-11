@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -73,6 +73,13 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     }
   }
 
+  useEffect(() => {
+    if (isOpen && patient && !summary) {
+        handleGenerateSummary();
+    }
+  }, [isOpen, patient, summary]);
+
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       onOpenChange(open);
@@ -84,8 +91,8 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={`/avatars/${patient.name.replace(' ', '-')}.png`} data-ai-hint="person avatar" />
+             <Avatar className="h-20 w-20">
+              <AvatarImage src={`/avatars/${getPatientInitials(patient.name)}.png`} data-ai-hint="person avatar" />
               <AvatarFallback className="text-2xl">{getPatientInitials(patient.name)}</AvatarFallback>
             </Avatar>
             <div>
@@ -125,7 +132,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                         ) : (
                             <Sparkles />
                         )}
-                        Generate
+                        Regenerate
                     </Button>
                 </div>
                  <div className="text-sm text-muted-foreground border rounded-md p-3 min-h-[100px] bg-muted/20">
@@ -137,7 +144,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                         </div>
                     )}
                     {summary && <p>{summary}</p>}
-                    {!summary && !isLoadingSummary && <p>Click "Generate" to create an AI-powered summary of this patient's history.</p>}
+                    {!summary && !isLoadingSummary && <p>Click "Regenerate" to create a new AI-powered summary.</p>}
                  </div>
             </div>
             <div className="md:col-span-2">
