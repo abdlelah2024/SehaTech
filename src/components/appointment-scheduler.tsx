@@ -36,10 +36,11 @@ import type { Appointment } from "@/lib/types"
 interface AppointmentSchedulerProps {
   doctorId?: string;
   onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
+  context?: 'new-patient' | 'new-appointment';
 }
 
 
-export function AppointmentScheduler({ doctorId, onAppointmentCreated }: AppointmentSchedulerProps) {
+export function AppointmentScheduler({ doctorId, onAppointmentCreated, context = 'new-appointment' }: AppointmentSchedulerProps) {
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
@@ -119,16 +120,23 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated }: Appoint
     }
   }
 
+  const handleCreatePatient = () => {
+    // Logic to create a new patient will go here
+    toast({
+      title: "Patient Created!",
+      description: "The new patient record has been created.",
+    });
+    setOpen(false);
+  }
+
 
   const getButtonText = () => {
+    if (context === 'new-patient') return 'New Patient';
     if (doctorId) return 'Book Appointment';
-    // If it's not tied to a specific doctor (like on the Doctors tab), check if it's on the Patients tab.
-    // A bit of a heuristic, but for this app it works. If onAppointmentCreated is not provided, it's likely the "New Patient" context.
-    // In a larger app, we might pass an explicit prop.
-    if (!onAppointmentCreated) return 'New Patient';
     return 'New Appointment';
   }
 
+  const isNewPatientFlow = context === 'new-patient';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -137,101 +145,156 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated }: Appoint
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Schedule Appointment</DialogTitle>
+          <DialogTitle>{isNewPatientFlow ? 'Create New Patient' : 'Schedule Appointment'}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to book a new appointment.
+             {isNewPatientFlow
+                ? "Fill in the details below to create a new patient record."
+                : "Fill in the details below to book a new appointment."}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="patient" className="text-right">
-              Patient
-            </Label>
-            <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-              <SelectTrigger id="patient" className="col-span-3">
-                <SelectValue placeholder="Select a patient" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+
+        {isNewPatientFlow ? (
+          <div className="grid gap-4 py-4">
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Full Name</Label>
+              <Input id="name" placeholder="John Doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">Email</Label>
+              <Input id="email" type="email" placeholder="john.doe@example.com" className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dob" className="text-right">Date of Birth</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "col-span-3 justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={1930}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">Phone</Label>
+              <Input id="phone" type="tel" placeholder="555-0101" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="address" className="text-right">Address</Label>
+              <Input id="address" placeholder="123 Maple St, Springfield" className="col-span-3" />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="doctor" className="text-right">
-              Doctor
-            </Label>
-            <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
-              <SelectTrigger id="doctor" className="col-span-3">
-                <SelectValue placeholder="Select a doctor" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockDoctors.map(d => <SelectItem key={d.id} value={d.id}>Dr. {d.name} ({d.specialty})</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              Date
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+        ) : (
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="patient" className="text-right">
+                Patient
+              </Label>
+              <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
+                <SelectTrigger id="patient" className="col-span-3">
+                  <SelectValue placeholder="Select a patient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctor" className="text-right">
+                Doctor
+              </Label>
+              <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+                <SelectTrigger id="doctor" className="col-span-3">
+                  <SelectValue placeholder="Select a doctor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockDoctors.map(d => <SelectItem key={d.id} value={d.id}>Dr. {d.name} ({d.specialty})</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "col-span-3 justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP HH:mm") : <span>Pick a date and time</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="col-start-2 col-span-3">
+                <Button variant="ghost" onClick={handleGetSuggestions} disabled={isLoadingSuggestions || !selectedDoctorId || !selectedPatientId} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
+                  {isLoadingSuggestions ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
                   )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP HH:mm") : <span>Pick a date and time</span>}
+                  Suggest optimal slot with AI
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <div className="col-start-2 col-span-3">
-              <Button variant="ghost" onClick={handleGetSuggestions} disabled={isLoadingSuggestions || !selectedDoctorId || !selectedPatientId} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
-                {isLoadingSuggestions ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Suggest optimal slot with AI
-              </Button>
+              </div>
             </div>
-          </div>
-          {suggestions && (
+            {suggestions && (
+              <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">Suggestions</Label>
+                  <div className="col-span-3 space-y-2">
+                      {suggestions.map((slot, index) => (
+                          <div key={index} className="p-2 border rounded-md">
+                              <Button variant="link" className="p-0 h-auto" onClick={() => handleSuggestionClick(slot)}>
+                                  {format(new Date(slot.date), 'EEE, MMM d')} at {slot.time}
+                              </Button>
+                              <p className="text-xs text-muted-foreground mt-1">{slot.reason}</p>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+            )}
             <div className="grid grid-cols-4 items-start gap-4">
-                <Label className="text-right pt-2">Suggestions</Label>
-                <div className="col-span-3 space-y-2">
-                    {suggestions.map((slot, index) => (
-                        <div key={index} className="p-2 border rounded-md">
-                            <Button variant="link" className="p-0 h-auto" onClick={() => handleSuggestionClick(slot)}>
-                                {format(new Date(slot.date), 'EEE, MMM d')} at {slot.time}
-                            </Button>
-                            <p className="text-xs text-muted-foreground mt-1">{slot.reason}</p>
-                        </div>
-                    ))}
-                </div>
+              <Label htmlFor="notes" className="text-right pt-2">
+                Notes
+              </Label>
+              <Textarea id="notes" placeholder="Any additional notes for the doctor..." className="col-span-3" />
             </div>
-          )}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="notes" className="text-right pt-2">
-              Notes
-            </Label>
-            <Textarea id="notes" placeholder="Any additional notes for the doctor..." className="col-span-3" />
           </div>
-        </div>
+        )}
+
         <DialogFooter>
-          <Button onClick={handleConfirmAppointment}>Confirm Appointment</Button>
+          <Button onClick={isNewPatientFlow ? handleCreatePatient : handleConfirmAppointment}>
+            {isNewPatientFlow ? 'Create Patient' : 'Confirm Appointment'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

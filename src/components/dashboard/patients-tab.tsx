@@ -66,7 +66,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
             />
-            <AppointmentScheduler />
+            <AppointmentScheduler context="new-patient" />
           </div>
         </CardHeader>
         <CardContent>
