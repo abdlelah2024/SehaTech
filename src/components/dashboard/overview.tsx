@@ -6,10 +6,19 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter
 } from "@/components/ui/card"
 import { mockDoctors, mockPatients, mockRecentActivities, mockTransactions, mockAppointments } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getPatientInitials } from "@/lib/utils"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import Image from "next/image"
 
 export function Overview() {
   const totalPatients = mockPatients.length;
@@ -77,6 +86,55 @@ export function Overview() {
           </CardContent>
         </Card>
       </div>
+
+       <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Featured Doctors</CardTitle>
+            <CardDescription>Our top-rated and available doctors.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {mockDoctors.map((doctor) => (
+                  <CarouselItem key={doctor.id} className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1">
+                      <Card>
+                        <CardHeader className="flex-row gap-4 items-center">
+                           <Image
+                            src={doctor.image}
+                            alt={`Dr. ${doctor.name}`}
+                            width={60}
+                            height={60}
+                            className="rounded-full"
+                            data-ai-hint="doctor portrait"
+                          />
+                          <div>
+                            <CardTitle className="text-lg">Dr. {doctor.name}</CardTitle>
+                            <CardDescription>{doctor.specialty}</CardDescription>
+                          </div>
+                        </CardHeader>
+                        <CardFooter>
+                           <p className="text-xs text-muted-foreground">
+                            Next Available: {doctor.nextAvailable}
+                          </p>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </CardContent>
+        </Card>
+
       <Card className="mt-6">
         <CardHeader>
           <div className="flex items-center justify-between">
