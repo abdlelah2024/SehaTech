@@ -7,13 +7,16 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { mockDoctors, mockPatients, mockRecentActivities } from "@/lib/mock-data"
+import { mockDoctors, mockPatients, mockRecentActivities, mockTransactions } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getPatientInitials } from "@/lib/utils"
 
 export function Overview() {
   const totalPatients = mockPatients.length;
   const activeDoctors = mockDoctors.filter(d => d.isAvailableToday).length;
+  const totalRevenue = mockTransactions
+    .filter(t => t.status === 'Success')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div className="mt-4">
@@ -26,7 +29,7 @@ export function Overview() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">
               +20.1% from last month
             </p>

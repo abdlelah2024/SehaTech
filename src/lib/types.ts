@@ -34,3 +34,12 @@ export interface RecentActivity {
   action: string;
   timestamp: string;
 }
+
+export interface Transaction {
+  id: string;
+  patientId: string;
+  patientName: string;
+  date: string;
+  amount: number;
+  status: 'Success' | 'Failed';
+}

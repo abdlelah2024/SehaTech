@@ -12,6 +12,7 @@ import {
   Stethoscope,
   Users,
   Search,
+  CreditCard,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -40,9 +41,10 @@ import { AppointmentsTab } from "@/components/dashboard/appointments-tab"
 import { DoctorsTab } from "@/components/dashboard/doctors-tab"
 import { PatientsTab } from "@/components/dashboard/patients-tab"
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
+import { BillingTab } from "@/components/dashboard/billing-tab"
 import { cn } from "@/lib/utils"
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analytics";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analytics" | "billing";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabValue>("dashboard");
@@ -56,6 +58,7 @@ export default function Dashboard() {
     { id: "appointments", label: "Appointments", icon: CalendarDays, badge: "6" },
     { id: "doctors", label: "Doctors", icon: Stethoscope },
     { id: "patients", label: "Patients", icon: Users },
+    { id: "billing", label: "Billing", icon: CreditCard },
     { id: "analytics", label: "Analytics", icon: LineChart },
   ];
 
@@ -204,11 +207,12 @@ export default function Dashboard() {
             <h1 className="text-lg font-semibold md:text-2xl capitalize">{activeTab}</h1>
           </div>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 md:hidden">
+            <TabsList className="grid w-full grid-cols-6 md:hidden">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
               <TabsTrigger value="doctors">Doctors</TabsTrigger>
               <TabsTrigger value="patients">Patients</TabsTrigger>
+              <TabsTrigger value="billing">Billing</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
@@ -222,6 +226,9 @@ export default function Dashboard() {
             </TabsContent>
             <TabsContent value="patients">
               <PatientsTab />
+            </TabsContent>
+            <TabsContent value="billing">
+              <BillingTab />
             </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab />

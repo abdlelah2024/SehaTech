@@ -1,4 +1,4 @@
-import type { Patient, Doctor, Appointment, RecentActivity } from "./types";
+import type { Patient, Doctor, Appointment, RecentActivity, Transaction } from "./types";
 
 export const mockPatients: Patient[] = [
   { id: 'patient-1', name: 'John Doe', email: 'john.doe@example.com' },
@@ -159,4 +159,12 @@ export const mockRecentActivities: RecentActivity[] = [
     action: 'added new availability for next week.',
     timestamp: '1 day ago',
   },
+];
+
+export const mockTransactions: Transaction[] = [
+  { id: 'txn-1', patientId: 'patient-2', patientName: 'Jane Smith', date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 150.00, status: 'Success' },
+  { id: 'txn-2', patientId: 'patient-1', patientName: 'John Doe', date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 200.00, status: 'Success' },
+  { id: 'txn-3', patientId: 'patient-5', patientName: 'David Williams', date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 75.50, status: 'Success' },
+  { id: 'txn-4', patientId: 'patient-3', patientName: 'Peter Jones', date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 110.00, status: 'Failed' },
+  { id: 'txn-5', patientId: 'patient-4', patientName: 'Mary Johnson', date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 300.00, status: 'Success' },
 ];
