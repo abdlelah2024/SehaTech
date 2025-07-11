@@ -6,8 +6,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { mockDoctors, mockPatients } from "@/lib/mock-data"
 
 export function Overview() {
+  const totalPatients = mockPatients.length;
+  const activeDoctors = mockDoctors.filter(d => d.isAvailableToday).length;
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
       <Card>
@@ -32,9 +36,9 @@ export function Overview() {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">+2350</div>
+          <div className="text-2xl font-bold">+{totalPatients}</div>
           <p className="text-xs text-muted-foreground">
-            +180.1% from last month
+            All-time patient records
           </p>
         </CardContent>
       </Card>
@@ -58,9 +62,9 @@ export function Overview() {
           <Stethoscope className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">+573</div>
+          <div className="text-2xl font-bold">+{activeDoctors}</div>
           <p className="text-xs text-muted-foreground">
-            +20 since last hour
+            Available today
           </p>
         </CardContent>
       </Card>
