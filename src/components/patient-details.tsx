@@ -28,6 +28,7 @@ import { summarizePatientHistory, SummarizePatientHistoryInput } from "@/ai/flow
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Skeleton } from "./ui/skeleton"
+import { LocalizedDateTime } from "./localized-date-time"
 
 interface PatientDetailsProps {
   patient: Patient
@@ -86,7 +87,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     if (isOpen) {
       generateSummary();
     }
-  }, [patient, isOpen]);
+  }, [patient, isOpen, patientAppointments]);
 
 
   const getAge = (dob: string) => {
@@ -124,9 +125,9 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-right">الحالة</TableHead>
-                            <TableHead className="text-right">التاريخ والوقت</TableHead>
-                            <TableHead className="text-right">الطبيب</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>التاريخ والوقت</TableHead>
+                            <TableHead>الطبيب</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -143,7 +144,9 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                   {statusTranslations[appointment.status]}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</TableCell>
+                              <TableCell>
+                                <LocalizedDateTime dateTime={appointment.dateTime} options={{ dateStyle: 'short', timeStyle: 'short', hour12: true }}/>
+                              </TableCell>
                               <TableCell>
                                 <div className="font-medium">{appointment.doctorName}</div>
                                 <div className="text-xs text-muted-foreground">{appointment.doctorSpecialty}</div>
@@ -164,10 +167,10 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-right">الحالة</TableHead>
-                            <TableHead className="text-right">المبلغ</TableHead>
-                            <TableHead className="text-right">التاريخ</TableHead>
-                            <TableHead className="text-right">الخدمة</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>المبلغ</TableHead>
+                            <TableHead>التاريخ</TableHead>
+                            <TableHead>الخدمة</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -182,7 +185,9 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                 </Badge>
                                </TableCell>
                                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
-                               <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
+                               <TableCell>
+                                 <LocalizedDateTime dateTime={transaction.date} />
+                                </TableCell>
                                <TableCell>{transaction.service}</TableCell>
                             </TableRow>
                            ))) : (

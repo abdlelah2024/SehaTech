@@ -30,6 +30,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { format, isSameDay } from "date-fns"
 import { ar } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { LocalizedDateTime } from "../localized-date-time"
 
 interface AppointmentsTabProps {
   // searchTerm removed as it's now handled locally
@@ -89,11 +90,11 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
           </div>
           <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <div className="relative w-full sm:w-auto flex-grow">
-                 <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                  <Input
                   type="search"
                   placeholder="ابحث عن مريض أو طبيب..."
-                  className="w-full appearance-none bg-background pr-8 shadow-none"
+                  className="w-full appearance-none bg-background pl-8 shadow-none"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -103,12 +104,12 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-full sm:w-[240px] justify-start text-right font-normal",
+                      "w-full sm:w-[240px] justify-start text-left font-normal",
                       !filterDate && "text-muted-foreground"
                     )}
                   >
+                     <CalendarIcon className="mr-2 h-4 w-4" />
                      {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
-                     <CalendarIcon className="mr-auto h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -149,7 +150,7 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
               {(searchTerm || filterDate || filterStatus !== 'all' || filterDoctor !== 'all') && (
                 <Button variant="ghost" onClick={handleClearFilters}>
                   مسح الفلاتر
-                  <X className="mr-2 h-4 w-4" />
+                  <X className="ml-2 h-4 w-4" />
                 </Button>
               )}
           </div>
@@ -159,11 +160,11 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">المريض</TableHead>
-                <TableHead className="text-right">الطبيب</TableHead>
-                <TableHead className="text-right">التخصص</TableHead>
-                <TableHead className="text-right">التاريخ والوقت</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
+                <TableHead>المريض</TableHead>
+                <TableHead>الطبيب</TableHead>
+                <TableHead>التخصص</TableHead>
+                <TableHead>التاريخ والوقت</TableHead>
+                <TableHead>الحالة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -172,7 +173,9 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
                    <TableCell>{appointment.patientName}</TableCell>
                    <TableCell>{appointment.doctorName}</TableCell>
                   <TableCell>{appointment.doctorSpecialty}</TableCell>
-                  <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
+                  <TableCell>
+                    <LocalizedDateTime dateTime={appointment.dateTime} options={{ dateStyle: 'short', timeStyle: 'short' }} />
+                  </TableCell>
                   <TableCell>
                      <Badge variant={
                        appointment.status === 'Completed' ? 'success' :
