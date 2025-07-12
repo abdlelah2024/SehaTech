@@ -36,10 +36,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { mockUsers } from "@/lib/mock-data"
 import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
+import { EditUserDialog } from "./edit-user-dialog"
+import { Edit, Trash2 } from "lucide-react"
 
 interface UsersTabProps {
   searchTerm: string;
@@ -53,7 +66,9 @@ const roleTranslations: { [key in UserRole]: string } = {
 
 export function UsersTab({ searchTerm }: UsersTabProps) {
   const [users, setUsers] = useState<User[]>(mockUsers)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -84,16 +99,29 @@ export function UsersTab({ searchTerm }: UsersTabProps) {
       description: `تمت إضافة ${name} إلى النظام.`,
     });
     
-    resetDialog();
+    resetAddDialog();
   };
   
-  const resetDialog = () => {
+  const resetAddDialog = () => {
     setName("");
     setEmail("");
     setPassword("");
     setRole("receptionist");
-    setIsDialogOpen(false);
+    setIsAddDialogOpen(false);
   }
+
+  const handleUserUpdated = (updatedUser: User) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setUserToEdit(null);
+  };
+  
+  const handleUserDeleted = (userId: string) => {
+     setUsers(prev => prev.filter(u => u.id !== userId));
+     toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف المستخدم من النظام.",
+     });
+  };
 
   const filteredUsers = useMemo(() => {
     return users.filter(user =>
@@ -103,85 +131,130 @@ export function UsersTab({ searchTerm }: UsersTabProps) {
   }, [users, searchTerm]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>المستخدمين والصلاحيات</CardTitle>
-          <CardDescription>إدارة حسابات المستخدمين وأدوارهم في النظام.</CardDescription>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => { if (isOpen) { resetDialog(); setIsDialogOpen(true); } else { setIsDialogOpen(false); } }}>
-          <DialogTrigger asChild>
-            <Button>إضافة مستخدم جديد</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>إضافة مستخدم جديد</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">الاسم</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>المستخدمين والصلاحيات</CardTitle>
+            <CardDescription>إدارة حسابات المستخدمين وأدوارهم في النظام.</CardDescription>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>إضافة مستخدم جديد</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+                 <DialogDescription>
+                  أدخل بيانات المستخدم الجديد وقم بتعيين دور له.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">الاسم</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">كلمة المرور</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="role" className="text-right">الدور</Label>
+                  <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="اختر دوراً" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">مدير</SelectItem>
+                      <SelectItem value="receptionist">موظف استقبال</SelectItem>
+                      <SelectItem value="doctor">طبيب</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">كلمة المرور</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="role" className="text-right">الدور</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="اختر دوراً" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">مدير</SelectItem>
-                    <SelectItem value="receptionist">موظف استقبال</SelectItem>
-                    <SelectItem value="doctor">طبيب</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddUser}>إضافة المستخدم</Button>
-              <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">الاسم</TableHead>
-              <TableHead className="text-right">البريد الإلكتروني</TableHead>
-              <TableHead className="text-right">الدور</TableHead>
-              <TableHead className="text-right">الإجراءات</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant={
-                    user.role === 'admin' ? 'destructive' :
-                    user.role === 'doctor' ? 'secondary' : 'default'
-                  }>
-                    {roleTranslations[user.role]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm">تعديل</Button>
-                </TableCell>
+              <DialogFooter>
+                 <Button onClick={handleAddUser}>إضافة المستخدم</Button>
+                 <Button variant="secondary" onClick={() => setIsAddDialogOpen(false)}>إلغاء</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">الاسم</TableHead>
+                <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                <TableHead className="text-right">الدور</TableHead>
+                <TableHead className="text-center">الإجراءات</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      user.role === 'admin' ? 'destructive' :
+                      user.role === 'doctor' ? 'secondary' : 'default'
+                    }>
+                      {roleTranslations[user.role]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUserToEdit(user)}>
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">تعديل</span>
+                    </Button>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                             <Trash2 className="h-4 w-4" />
+                             <span className="sr-only">حذف</span>
+                           </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف المستخدم بشكل دائم.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleUserDeleted(user.id)} className="bg-destructive hover:bg-destructive/90">
+                              نعم، قم بالحذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredUsers.length === 0 && (
+                 <TableRow>
+                      <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                          لا يوجد مستخدمون يطابقون معايير البحث.
+                      </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {userToEdit && (
+        <EditUserDialog
+          isOpen={!!userToEdit}
+          onClose={() => setUserToEdit(null)}
+          user={userToEdit}
+          onUserUpdated={handleUserUpdated}
+        />
+      )}
+    </>
   )
 }
