@@ -138,7 +138,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
           </Select>
           {showClearButton && (
             <Button variant="ghost" onClick={handleClearFilters}>
-              <X className="mr-2 h-4 w-4" />
+              <X className="ml-2 h-4 w-4" />
               مسح
             </Button>
           )}
@@ -164,7 +164,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
                       <CardDescription>{doctor.specialty}</CardDescription>
                     </div>
                   </div>
-                   <div className="flex gap-1 mr-auto">
+                   <div className="flex gap-1 ml-auto">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDoctorToEdit(doctor)}>
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">تعديل</span>
@@ -201,7 +201,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
                </div>
                 <div className="flex items-center gap-2">
                   <Repeat className="h-4 w-4" />
-                 <span>عودة مجانية: {doctor.freeReturnDays ?? 'غير محدد'} أيام</span>
+                 <span>إعادة مجانية: {doctor.freeReturnDays ?? 'غير محدد'} أيام</span>
                </div>
                <div className="flex items-start gap-2">
                   <Calendar className="h-4 w-4 mt-1" />

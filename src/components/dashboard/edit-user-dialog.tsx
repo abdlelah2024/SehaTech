@@ -64,7 +64,7 @@ export function EditUserDialog({ isOpen, onClose, user, onUserUpdated }: EditUse
     onUserUpdated(updatedUser);
 
     toast({
-      title: "تم تحديث البيانات بنجاح!",
+      title: "تم تحديث البيانات بنجاح",
       description: `تم تحديث ملف المستخدم ${name}.`,
     });
     

@@ -35,6 +35,13 @@ interface PatientDetailsProps {
   onOpenChange: (isOpen: boolean) => void
 }
 
+const statusTranslations: { [key: string]: string } = {
+  'Scheduled': 'مجدول',
+  'Waiting': 'في الانتظار',
+  'Completed': 'مكتمل',
+  'Follow-up': 'إعادة'
+};
+
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
   const [summary, setSummary] = useState('');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -63,21 +70,23 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             doctorName: a.doctorName,
             doctorSpecialty: a.doctorSpecialty,
             dateTime: new Date(a.dateTime).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' }),
-            status: a.status === 'Completed' ? 'مكتمل' : a.status === 'Scheduled' ? 'مجدول' : a.status === 'Waiting' ? 'في الانتظار' : 'عودة',
+            status: statusTranslations[a.status] || a.status,
           })),
         };
         const result = await summarizePatientHistory(input);
         setSummary(result.summary);
       } catch (error) {
         console.error("Error generating patient summary:", error);
-        setSummary("عذرًا، لم نتمكن من إنشاء الملخص في الوقت الحالي.");
+        setSummary("عذراً، لم نتمكن من إنشاء الملخص في الوقت الحالي.");
       } finally {
         setIsLoadingSummary(false);
       }
     };
 
-    generateSummary();
-  }, [patient, isOpen, patientAppointments]);
+    if (isOpen) {
+      generateSummary();
+    }
+  }, [patient, isOpen]);
 
 
   const getAge = (dob: string) => {
@@ -107,7 +116,85 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             </div>
           </div>
         </DialogHeader>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[70vh] overflow-y-auto pl-2">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="md:col-span-3 space-y-6">
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">سجل المواعيد</h3>
+                    <div className="max-h-48 overflow-y-auto border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">التاريخ والوقت</TableHead>
+                            <TableHead className="text-right">الطبيب</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {patientAppointments.length > 0 ? (
+                            patientAppointments.map((appointment: Appointment) => (
+                            <TableRow key={appointment.id}>
+                              <TableCell>
+                                <Badge variant={
+                                  appointment.status === 'Completed' ? 'success' :
+                                  appointment.status === 'Scheduled' ? 'secondary' :
+                                  appointment.status === 'Waiting' ? 'waiting' :
+                                  'followup'
+                                }>
+                                  {statusTranslations[appointment.status]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</TableCell>
+                              <TableCell>
+                                <div className="font-medium">{appointment.doctorName}</div>
+                                <div className="text-xs text-muted-foreground">{appointment.doctorSpecialty}</div>
+                              </TableCell>
+                            </TableRow>
+                          ))) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center h-24">لا توجد مواعيد.</TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                </div>
+                 <div>
+                    <h3 className="text-lg font-semibold mb-2">سجل الفواتير</h3>
+                    <div className="max-h-48 overflow-y-auto border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">المبلغ</TableHead>
+                            <TableHead className="text-right">التاريخ</TableHead>
+                            <TableHead className="text-right">الخدمة</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {patientTransactions.length > 0 ? (
+                            patientTransactions.map((transaction: Transaction) => (
+                            <TableRow key={transaction.id}>
+                               <TableCell>
+                                 <Badge variant={
+                                   transaction.status === 'Success' ? 'success' : 'destructive'
+                                 }>
+                                  {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
+                                </Badge>
+                               </TableCell>
+                               <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
+                               <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
+                               <TableCell>{transaction.service}</TableCell>
+                            </TableRow>
+                           ))) : (
+                             <TableRow>
+                                <TableCell colSpan={4} className="text-center h-24">لا توجد فواتير.</TableCell>
+                            </TableRow>
+                           )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                </div>
+            </div>
             <div className="md:col-span-2 space-y-6">
                  <div>
                     <h3 className="text-lg font-semibold mb-3">معلومات المريض</h3>
@@ -147,89 +234,6 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                         )}
                       </AlertDescription>
                     </Alert>
-                </div>
-            </div>
-            <div className="md:col-span-3 space-y-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-2">سجل المواعيد</h3>
-                    <div className="max-h-48 overflow-y-auto border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-right">الطبيب</TableHead>
-                            <TableHead className="text-right">التاريخ والوقت</TableHead>
-                            <TableHead className="text-right">الحالة</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {patientAppointments.length > 0 ? (
-                            patientAppointments.map((appointment: Appointment) => (
-                            <TableRow key={appointment.id}>
-                              <TableCell>
-                                <div className="font-medium">{appointment.doctorName}</div>
-                                <div className="text-xs text-muted-foreground">{appointment.doctorSpecialty}</div>
-                              </TableCell>
-                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</TableCell>
-                              <TableCell>
-                                <Badge variant={
-                                  appointment.status === 'Completed' ? 'success' :
-                                  appointment.status === 'Scheduled' ? 'secondary' :
-                                  appointment.status === 'Waiting' ? 'waiting' :
-                                  'followup'
-                                }>
-                                  {
-                                    appointment.status === 'Completed' ? 'مكتمل' :
-                                    appointment.status === 'Scheduled' ? 'مجدول' :
-                                    appointment.status === 'Waiting' ? 'في الانتظار' :
-                                    'عودة'
-                                  }
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))) : (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">لا توجد مواعيد.</TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                </div>
-                 <div>
-                    <h3 className="text-lg font-semibold mb-2">سجل الفواتير</h3>
-                    <div className="max-h-48 overflow-y-auto border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-right">الخدمة</TableHead>
-                            <TableHead className="text-right">التاريخ</TableHead>
-                            <TableHead className="text-right">المبلغ</TableHead>
-                            <TableHead className="text-right">الحالة</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {patientTransactions.length > 0 ? (
-                            patientTransactions.map((transaction: Transaction) => (
-                            <TableRow key={transaction.id}>
-                               <TableCell>{transaction.service}</TableCell>
-                               <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
-                               <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
-                               <TableCell>
-                                 <Badge variant={
-                                   transaction.status === 'Success' ? 'success' : 'destructive'
-                                 }>
-                                  {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
-                                </Badge>
-                               </TableCell>
-                            </TableRow>
-                           ))) : (
-                             <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">لا توجد فواتير.</TableCell>
-                            </TableRow>
-                           )}
-                        </TableBody>
-                      </Table>
-                    </div>
                 </div>
             </div>
         </div>

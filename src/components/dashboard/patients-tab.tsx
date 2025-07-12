@@ -82,15 +82,20 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">المريض</TableHead>
-                  <TableHead className="text-right">رقم الهاتف</TableHead>
-                  <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
                   <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
+                  <TableHead className="text-right">رقم الهاتف</TableHead>
+                  <TableHead className="text-right">المريض</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPatients.length > 0 ? filteredPatients.map((patient) => (
                   <TableRow key={patient.id} onClick={() => setSelectedPatient(patient)} className="cursor-pointer">
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); }}>عرض الملف</Button>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
+                    <TableCell>{patient.phone}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-4">
                         <Avatar>
@@ -99,11 +104,6 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                         </Avatar>
                         <span className="font-medium">{patient.name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{patient.phone}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); }}>عرض الملف</Button>
                     </TableCell>
                   </TableRow>
                 )) : (

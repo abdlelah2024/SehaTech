@@ -72,7 +72,7 @@ export default function Dashboard() {
     { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients" },
     { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing" },
     { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics" },
-    { id: "users", label: "المستخدمين", icon: Users, href: "/dashboard?tab=users" },
+    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users" },
   ];
 
   const renderNavLinks = (isMobile: boolean = false) => (
@@ -117,7 +117,24 @@ export default function Dashboard() {
 
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+       <div className="hidden border-l bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <Stethoscope className="h-6 w-6 text-primary" />
+              <span className="">صحة تك</span>
+            </Link>
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
+      </div>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -141,11 +158,11 @@ export default function Dashboard() {
           <div className="w-full flex-1">
              <form>
               <div className="relative">
-                <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="بحث..."
-                  className="w-full appearance-none bg-background pr-8 shadow-none md:w-2/3 lg:w-1/3"
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                   value={globalSearchTerm}
                   onChange={(e) => setGlobalSearchTerm(e.target.value)}
                 />
@@ -171,7 +188,7 @@ export default function Dashboard() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl capitalize">
+            <h1 className="text-lg font-semibold md:text-2xl">
               {navLinks.find(l => l.id === activeTab)?.label || activeTab}
             </h1>
           </div>
@@ -199,23 +216,6 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         </main>
-      </div>
-       <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Stethoscope className="h-6 w-6 text-primary" />
-              <span className="">صحة تك</span>
-            </Link>
-            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
       </div>
     </div>
   )

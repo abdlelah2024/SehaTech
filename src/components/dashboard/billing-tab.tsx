@@ -203,22 +203,17 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">رقم الفاتورة</TableHead>
-              <TableHead className="text-right">المريض</TableHead>
-              <TableHead className="text-right">الخدمة</TableHead>
-              <TableHead className="text-right">التاريخ</TableHead>
-              <TableHead className="text-right">المبلغ</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">المبلغ</TableHead>
+              <TableHead className="text-right">التاريخ</TableHead>
+              <TableHead className="text-right">الخدمة</TableHead>
+              <TableHead className="text-right">المريض</TableHead>
+              <TableHead className="w-[100px] text-right">رقم الفاتورة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
-                <TableCell>{transaction.patientName}</TableCell>
-                <TableCell>{transaction.service}</TableCell>
-                <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
-                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                 <TableCell>
                    <Badge variant={
                      transaction.status === 'Success' ? 'success' : 'destructive'
@@ -226,6 +221,11 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                     {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
                   </Badge>
                 </TableCell>
+                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
+                <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
+                <TableCell>{transaction.service}</TableCell>
+                <TableCell>{transaction.patientName}</TableCell>
+                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
               </TableRow>
             ))}
              {filteredTransactions.length === 0 && (

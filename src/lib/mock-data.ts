@@ -183,7 +183,7 @@ export const mockRecentActivities: RecentActivity[] = [
 ];
 
 export const mockTransactions: Transaction[] = [
-  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدية' },
+  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدي' },
   { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'زيارة متابعة' },
   { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
   { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },

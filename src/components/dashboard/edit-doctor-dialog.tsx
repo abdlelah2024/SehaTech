@@ -82,7 +82,7 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
     onDoctorUpdated(updatedDoctor);
 
     toast({
-      title: "تم تحديث البيانات بنجاح!",
+      title: "تم تحديث البيانات بنجاح",
       description: `تم تحديث ملف د. ${name}.`,
     });
     
@@ -98,7 +98,7 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
             قم بتحديث بيانات الطبيب أدناه.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               الاسم
@@ -119,7 +119,7 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="returnDays" className="text-right">
-              عودة مجانية (أيام)
+              إعادة مجانية (أيام)
             </Label>
             <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3" placeholder="14" />
           </div>

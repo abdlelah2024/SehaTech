@@ -73,7 +73,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
     onDoctorCreated(newDoctor);
 
     toast({
-      title: "تمت إضافة الطبيب بنجاح!",
+      title: "تمت إضافة الطبيب بنجاح",
       description: `تم إضافة د. ${name} إلى النظام.`,
     });
     
@@ -98,7 +98,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
             أدخل بيانات الطبيب الجديد. سيتمكن من تسجيل الدخول لاحقاً.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               الاسم
@@ -119,7 +119,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="returnDays" className="text-right">
-              عودة مجانية (أيام)
+              إعادة مجانية (أيام)
             </Label>
             <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3" placeholder="14" />
           </div>

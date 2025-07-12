@@ -40,7 +40,7 @@ const statusTranslations: { [key: string]: string } = {
   'Scheduled': 'مجدول',
   'Waiting': 'في الانتظار',
   'Completed': 'مكتمل',
-  'Follow-up': 'عودة'
+  'Follow-up': 'إعادة'
 };
 
 export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
@@ -95,7 +95,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                       !filterDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="ml-2 h-4 w-4" />
                     {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
                   </Button>
                 </PopoverTrigger>
@@ -136,7 +136,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
               
               {(filterDate || filterStatus !== 'all' || filterDoctor !== 'all') && (
                 <Button variant="ghost" onClick={handleClearFilters}>
-                  <X className="mr-2 h-4 w-4" />
+                  <X className="ml-2 h-4 w-4" />
                   مسح الفلاتر
                 </Button>
               )}
@@ -146,20 +146,16 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">المريض</TableHead>
-              <TableHead className="text-right">الطبيب</TableHead>
-              <TableHead className="text-right">التخصص</TableHead>
-              <TableHead className="text-right">التاريخ والوقت</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">التاريخ والوقت</TableHead>
+              <TableHead className="text-right">التخصص</TableHead>
+              <TableHead className="text-right">الطبيب</TableHead>
+              <TableHead className="text-right">المريض</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAppointments.length > 0 ? filteredAppointments.map((appointment) => (
               <TableRow key={appointment.id}>
-                <TableCell>{appointment.patientName}</TableCell>
-                <TableCell>{appointment.doctorName}</TableCell>
-                <TableCell>{appointment.doctorSpecialty}</TableCell>
-                <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
                 <TableCell>
                    <Badge variant={
                      appointment.status === 'Completed' ? 'success' :
@@ -170,6 +166,10 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                     {statusTranslations[appointment.status]}
                   </Badge>
                 </TableCell>
+                <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
+                <TableCell>{appointment.doctorSpecialty}</TableCell>
+                <TableCell>{appointment.doctorName}</TableCell>
+                <TableCell>{appointment.patientName}</TableCell>
               </TableRow>
             )) : (
               <TableRow>

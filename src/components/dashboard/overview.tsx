@@ -77,7 +77,7 @@ export function Overview() {
           <CardContent>
             <div className="text-2xl font-bold">+{totalPatients}</div>
             <p className="text-xs text-muted-foreground">
-              سجلات المرضى على الإطلاق
+              إجمالي سجلات المرضى
             </p>
           </CardContent>
         </Card>
@@ -103,7 +103,7 @@ export function Overview() {
           <CardContent>
             <div className="text-2xl font-bold">+{activeDoctors}</div>
             <p className="text-xs text-muted-foreground">
-              متاحون اليوم
+              المتاحون اليوم
             </p>
           </CardContent>
         </Card>

@@ -135,7 +135,7 @@ export function UsersTab({ searchTerm }: UsersTabProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>المستخدمين والصلاحيات</CardTitle>
+            <CardTitle>المستخدمون والصلاحيات</CardTitle>
             <CardDescription>إدارة حسابات المستخدمين وأدوارهم في النظام.</CardDescription>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -187,25 +187,15 @@ export function UsersTab({ searchTerm }: UsersTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">الاسم</TableHead>
-                <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                <TableHead className="text-right">الدور</TableHead>
                 <TableHead className="text-center">الإجراءات</TableHead>
+                <TableHead className="text-right">الدور</TableHead>
+                <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                <TableHead className="text-right">الاسم</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      user.role === 'admin' ? 'destructive' :
-                      user.role === 'doctor' ? 'secondary' : 'default'
-                    }>
-                      {roleTranslations[user.role]}
-                    </Badge>
-                  </TableCell>
                   <TableCell className="text-center">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUserToEdit(user)}>
                         <Edit className="h-4 w-4" />
@@ -234,6 +224,16 @@ export function UsersTab({ searchTerm }: UsersTabProps) {
                         </AlertDialogContent>
                       </AlertDialog>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      user.role === 'admin' ? 'destructive' :
+                      user.role === 'doctor' ? 'secondary' : 'default'
+                    }>
+                      {roleTranslations[user.role]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.name}</TableCell>
                 </TableRow>
               ))}
               {filteredUsers.length === 0 && (
