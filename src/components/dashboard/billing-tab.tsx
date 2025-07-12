@@ -121,7 +121,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="patient" className="text-right">
+                  <Label htmlFor="patient" className="text-left">
                     المريض
                   </Label>
                    <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
@@ -134,19 +134,19 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="service" className="text-right">الخدمة</Label>
+                  <Label htmlFor="service" className="text-left">الخدمة</Label>
                   <div className="col-span-3 flex items-center gap-2">
-                     <Input id="service" placeholder="مثال: فحص عام" className="flex-grow" value={service} onChange={(e) => setService(e.target.value)} />
+                     <Input id="service" placeholder="مثال: فحص عام" className="flex-grow text-right" value={service} onChange={(e) => setService(e.target.value)} />
                   </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="amount" className="text-right">المبلغ (﷼)</Label>
-                  <Input id="amount" type="number" placeholder="5000" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Label htmlFor="amount" className="text-left">المبلغ (﷼)</Label>
+                  <Input id="amount" type="number" placeholder="5000" className="col-span-3 text-right" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
+                 <Button onClick={handleRecordTransaction}>حفظ الفاتورة</Button>
                  <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
-                <Button onClick={handleRecordTransaction}>حفظ الفاتورة</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -155,7 +155,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>رقم الفاتورة</TableHead>
+              <TableHead className="text-left">رقم الفاتورة</TableHead>
               <TableHead>المريض</TableHead>
               <TableHead>الخدمة</TableHead>
               <TableHead>التاريخ</TableHead>
@@ -166,7 +166,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
+                <TableCell className="font-mono text-xs text-left" dir="ltr">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>
                 <TableCell>{transaction.service}</TableCell>
                 <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>

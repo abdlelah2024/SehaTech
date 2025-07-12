@@ -30,23 +30,23 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
             <div className="relative">
-                <Mail className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="m@example.com" required className="pr-8" />
+                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="email" type="email" placeholder="m@example.com" required className="pl-8 text-right" />
             </div>
           </div>
           <div className="grid gap-2">
              <div className="flex items-center">
-                 <Label htmlFor="password">كلمة المرور</Label>
-                <Link href="#" className="mr-auto inline-block text-sm underline">
+                 <Label htmlFor="password" className="text-right">كلمة المرور</Label>
+                <Link href="#" className="ml-auto inline-block text-sm underline">
                   نسيت كلمة المرور؟
                 </Link>
             </div>
 
             <div className="relative">
-                <Key className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="password" type="password" required className="pr-8" />
+                <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="password" type="password" required className="pl-8 text-right" />
             </div>
           </div>
         </CardContent>

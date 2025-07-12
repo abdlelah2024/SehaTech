@@ -100,55 +100,55 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor="name" className="text-left">
               الاسم
             </Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="مثال: علي الأحمد" />
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3 text-right" placeholder="مثال: علي الأحمد" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="specialty" className="text-right">
+            <Label htmlFor="specialty" className="text-left">
               التخصص
             </Label>
-            <Input id="specialty" value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="col-span-3" placeholder="مثال: أمراض القلب" />
+            <Input id="specialty" value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="col-span-3 text-right" placeholder="مثال: أمراض القلب" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="price" className="text-right">
+            <Label htmlFor="price" className="text-left">
               سعر الكشفية (﷼)
             </Label>
-            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="5000" />
+            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3 text-right" placeholder="5000" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="returnDays" className="text-right">
+            <Label htmlFor="returnDays" className="text-left">
               عودة مجانية (أيام)
             </Label>
-            <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3" placeholder="14" />
+            <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3 text-right" placeholder="14" />
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">
+            <Label className="text-left pt-2">
               أيام الدوام
             </Label>
             <div className="col-span-3 grid grid-cols-2 gap-2">
               {weekDays.map(day => (
-                <div key={day.id} className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox
-                    id={day.id}
-                    checked={availableDays.includes(day.id)}
-                    onCheckedChange={(checked) => handleDayChange(day.id, !!checked)}
-                  />
+                <div key={day.id} className="flex items-center space-x-2">
                   <label
                     htmlFor={day.id}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     {day.label}
                   </label>
+                  <Checkbox
+                    id={day.id}
+                    checked={availableDays.includes(day.id)}
+                    onCheckedChange={(checked) => handleDayChange(day.id, !!checked)}
+                  />
                 </div>
               ))}
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => setOpen(false)}>إلغاء</Button>
           <Button onClick={handleCreateDoctor}>إنشاء طبيب</Button>
+          <Button variant="secondary" onClick={() => setOpen(false)}>إلغاء</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
