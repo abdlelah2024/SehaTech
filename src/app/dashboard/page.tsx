@@ -10,7 +10,6 @@ import {
   Stethoscope,
   CalendarDays,
   Users,
-  Search,
   CreditCard,
   Menu,
 } from "lucide-react"
@@ -25,7 +24,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import Link from "next/link"
@@ -38,6 +36,10 @@ import { BillingTab } from "@/components/dashboard/billing-tab"
 import { UsersTab } from "@/components/dashboard/users-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
+import { GlobalSearch } from "@/components/dashboard/global-search"
+import type { Patient } from "@/lib/types"
+import { PatientDetails } from "@/components/patient-details"
+import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 
 type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "analytics" | "users";
@@ -48,6 +50,10 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [selectedPatientForProfile, setSelectedPatientForProfile] = useState<Patient | null>(null);
+  const [selectedPatientForAppointment, setSelectedPatientForAppointment] = useState<Patient | null>(null);
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+
   
   useEffect(() => {
     const tab = searchParams.get('tab') as TabValue;
@@ -115,9 +121,35 @@ export default function Dashboard() {
     </nav>
   );
 
+  const handlePatientCreated = (newPatient: Patient) => {
+    // This is a placeholder. The actual patient list state is in PatientsTab.
+    // We might need to lift state up or use a global state manager if we want
+    // the new patient to be immediately searchable in GlobalSearch.
+    // For now, this just closes the modals.
+    setIsAppointmentModalOpen(false);
+  }
+
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
+    <>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-l bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <Stethoscope className="h-6 w-6 text-primary" />
+              <span className="">صحة تك</span>
+            </Link>
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
+      </div>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -139,7 +171,13 @@ export default function Dashboard() {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-             {/* Global Search Bar Removed */}
+             <GlobalSearch 
+                onViewProfile={setSelectedPatientForProfile}
+                onNewAppointment={(patient) => {
+                  setSelectedPatientForAppointment(patient);
+                  setIsAppointmentModalOpen(true);
+                }}
+             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -160,8 +198,8 @@ export default function Dashboard() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl capitalize">
-              {navLinks.find(l => l.id === activeTab)?.label || activeTab}
+            <h1 className="text-lg font-semibold md:text-2xl">
+              {navLinks.find(l => l.id === activeTab)?.label}
             </h1>
           </div>
           <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v)} className="w-full">
@@ -189,23 +227,22 @@ export default function Dashboard() {
           </Tabs>
         </main>
       </div>
-       <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Stethoscope className="h-6 w-6 text-primary" />
-              <span className="">صحة تك</span>
-            </Link>
-            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
-      </div>
     </div>
+    {selectedPatientForProfile && (
+      <PatientDetails
+        patient={selectedPatientForProfile}
+        isOpen={!!selectedPatientForProfile}
+        onOpenChange={(isOpen) => !isOpen && setSelectedPatientForProfile(null)}
+      />
+    )}
+     {isAppointmentModalOpen && selectedPatientForAppointment && (
+        <AppointmentScheduler
+            onAppointmentCreated={() => setIsAppointmentModalOpen(false)}
+            onPatientCreated={handlePatientCreated}
+            selectedPatientId={selectedPatientForAppointment.id}
+            context="new-appointment"
+        />
+     )}
+    </>
   )
 }
