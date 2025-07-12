@@ -22,8 +22,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { mockAppointments, mockTransactions } from "@/lib/mock-data"
 import type { Patient, Appointment, Transaction } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
-import { Cake, VenetianMask, Phone, Home, Mail } from "lucide-react"
+import { Cake, VenetianMask, Phone, Home, Sparkles } from "lucide-react"
 import { Button } from "./ui/button"
+import { summarizePatientHistory, SummarizePatientHistoryInput } from "@/ai/flows/summarize-patient-history"
+import { useState, useEffect } from "react"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Skeleton } from "./ui/skeleton"
 
 interface PatientDetailsProps {
   patient: Patient
@@ -32,6 +36,8 @@ interface PatientDetailsProps {
 }
 
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
+  const [summary, setSummary] = useState('');
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const patientAppointments = mockAppointments.filter(
     (appointment) => appointment.patientId === patient.id
@@ -40,6 +46,39 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
   const patientTransactions = mockTransactions.filter(
     (transaction) => transaction.patientId === patient.id
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  useEffect(() => {
+    const generateSummary = async () => {
+      if (!isOpen) return;
+      setIsLoadingSummary(true);
+      setSummary('');
+      try {
+        const input: SummarizePatientHistoryInput = {
+          patient: {
+            name: patient.name,
+            dob: patient.dob,
+            gender: patient.gender,
+          },
+          appointments: patientAppointments.map(a => ({
+            doctorName: a.doctorName,
+            doctorSpecialty: a.doctorSpecialty,
+            dateTime: new Date(a.dateTime).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' }),
+            status: a.status === 'Completed' ? 'مكتمل' : a.status === 'Scheduled' ? 'مجدول' : a.status === 'Waiting' ? 'في الانتظار' : 'عودة',
+          })),
+        };
+        const result = await summarizePatientHistory(input);
+        setSummary(result.summary);
+      } catch (error) {
+        console.error("Error generating patient summary:", error);
+        setSummary("عذرًا، لم نتمكن من إنشاء الملخص في الوقت الحالي.");
+      } finally {
+        setIsLoadingSummary(false);
+      }
+    };
+
+    generateSummary();
+  }, [patient, isOpen, patientAppointments]);
+
 
   const getAge = (dob: string) => {
     if (!dob) return '';
@@ -90,6 +129,24 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             <span>{patient.address}</span>
                        </div>
                     </div>
+                </div>
+                 <div>
+                    <h3 className="text-lg font-semibold mb-3">ملخص ذكي</h3>
+                    <Alert>
+                      <Sparkles className="h-4 w-4" />
+                      <AlertTitle>ملخص السجل الطبي</AlertTitle>
+                      <AlertDescription>
+                        {isLoadingSummary ? (
+                          <div className="space-y-2 mt-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                          </div>
+                        ) : (
+                          summary
+                        )}
+                      </AlertDescription>
+                    </Alert>
                 </div>
             </div>
             <div className="md:col-span-3 space-y-6">
