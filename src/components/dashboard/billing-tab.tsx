@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { mockTransactions, mockPatients, mockAppointments } from "@/lib/mock-data"
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Appointment } from "@/lib/types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -34,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
+import { suggestBillingService, SuggestBillingServiceInput } from "@/ai/flows/suggest-billing-service";
+import { Sparkles, Loader2 } from "lucide-react";
 
 interface BillingTabProps {
   searchTerm: string;
@@ -45,6 +47,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
   const [amount, setAmount] = useState("");
   const [service, setService] = useState("");
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
 
   const handleRecordTransaction = () => {
@@ -78,6 +81,47 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     });
 
     setIsDialogOpen(false);
+  };
+
+  const handleSuggestService = async () => {
+    if (!selectedPatientId) {
+      toast({
+        variant: "destructive",
+        title: "لم يتم اختيار المريض",
+        description: "الرجاء اختيار المريض أولاً لاقتراح خدمة.",
+      });
+      return;
+    }
+
+    setIsSuggesting(true);
+    try {
+      const recentAppointments = mockAppointments
+        .filter(a => a.patientId === selectedPatientId)
+        .sort((a,b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
+        .map(a => ({
+          doctorSpecialty: a.doctorSpecialty,
+          dateTime: a.dateTime,
+          status: a.status,
+        }));
+      
+      const input: SuggestBillingServiceInput = {
+        patientId: selectedPatientId,
+        recentAppointments: recentAppointments,
+      };
+
+      const result = await suggestBillingService(input);
+      setService(result.service);
+
+    } catch (error) {
+      console.error("Error suggesting billing service:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في الاقتراح",
+        description: "لم نتمكن من اقتراح خدمة في الوقت الحالي.",
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
   };
 
   const filteredTransactions = useMemo(() => {
@@ -121,7 +165,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="patient" className="text-left">
+                  <Label htmlFor="patient" className="text-right">
                     المريض
                   </Label>
                    <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
@@ -134,14 +178,18 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="service" className="text-left">الخدمة</Label>
+                  <Label htmlFor="service" className="text-right">الخدمة</Label>
                   <div className="col-span-3 flex items-center gap-2">
-                     <Input id="service" placeholder="مثال: فحص عام" className="flex-grow text-right" value={service} onChange={(e) => setService(e.target.value)} />
+                     <Input id="service" placeholder="مثال: فحص عام" className="flex-grow" value={service} onChange={(e) => setService(e.target.value)} />
+                      <Button variant="outline" size="icon" onClick={handleSuggestService} disabled={isSuggesting}>
+                        {isSuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        <span className="sr-only">اقتراح خدمة</span>
+                      </Button>
                   </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="amount" className="text-left">المبلغ (﷼)</Label>
-                  <Input id="amount" type="number" placeholder="5000" className="col-span-3 text-right" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Label htmlFor="amount" className="text-right">المبلغ (﷼)</Label>
+                  <Input id="amount" type="number" placeholder="5000" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
@@ -155,7 +203,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-left">رقم الفاتورة</TableHead>
+              <TableHead>رقم الفاتورة</TableHead>
               <TableHead>المريض</TableHead>
               <TableHead>الخدمة</TableHead>
               <TableHead>التاريخ</TableHead>
@@ -166,7 +214,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs text-left" dir="ltr">{transaction.id}</TableCell>
+                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>
                 <TableCell>{transaction.service}</TableCell>
                 <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
