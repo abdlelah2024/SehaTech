@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { mockTransactions, mockPatients } from "@/lib/mock-data"
-import type { Transaction } from "@/lib/types";
+import { mockTransactions, mockPatients, mockAppointments } from "@/lib/mock-data"
+import type { Transaction, Patient } from "@/lib/types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
+import { Sparkles } from "lucide-react";
 
 interface BillingTabProps {
   searchTerm: string;
@@ -46,6 +47,8 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [amount, setAmount] = useState("");
   const [service, setService] = useState("");
   const { toast } = useToast();
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+
 
   const handleRecordTransaction = () => {
     if (!selectedPatientId || !amount || !service) {
@@ -90,22 +93,29 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
       transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [transactions, searchTerm]);
+  
+  const resetDialog = useCallback(() => {
+    setSelectedPatientId(undefined);
+    setAmount("");
+    setService("");
+    setIsLoadingSuggestion(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      resetDialog();
+    }
+  }, [isDialogOpen, resetDialog]);
+
 
   return (
-    <Card className="mt-4">
+    <Card>
        <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>الفواتير</CardTitle>
             <CardDescription>عرض وإدارة جميع المعاملات المالية.</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) {
-              setSelectedPatientId(undefined);
-              setAmount("");
-              setService("");
-            }
-          }}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>تسجيل فاتورة</Button>
             </DialogTrigger>
@@ -140,6 +150,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 </div>
               </div>
               <DialogFooter>
+                 <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
                 <Button onClick={handleRecordTransaction}>حفظ الفاتورة</Button>
               </DialogFooter>
             </DialogContent>
@@ -174,6 +185,13 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 </TableCell>
               </TableRow>
             ))}
+             {filteredTransactions.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                        لا توجد فواتير تطابق معايير البحث.
+                    </TableCell>
+                </TableRow>
+              )}
           </TableBody>
         </Table>
       </CardContent>
