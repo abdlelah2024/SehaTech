@@ -134,7 +134,10 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
 
 
   const isNewPatientFlow = context === 'new-patient';
-  const isDoctorSelectionDisabled = !selectedPatientId && !doctorId;
+  
+  // Disable doctor selection if it's the general "New Appointment" flow and no patient has been selected yet.
+  // If a specific doctorId is passed (from the Doctors tab), it should be enabled and pre-selected.
+  const isDoctorSelectionDisabled = !doctorId && !selectedPatientId;
 
 
   return (
