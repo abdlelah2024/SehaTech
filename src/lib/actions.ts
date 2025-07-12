@@ -62,7 +62,7 @@ export async function getPatientSummaryAction(patient: Patient) {
     .map((a) => ({
       doctorName: a.doctorName,
       doctorSpecialty: a.doctorSpecialty,
-      dateTime: new Date(a.dateTime).toLocaleString(),
+      dateTime: new Date(a.dateTime).toLocaleString('ar-EG'),
       status: a.status,
     }))
 

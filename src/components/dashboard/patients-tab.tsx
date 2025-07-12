@@ -90,7 +90,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <Avatar>
-                         <AvatarImage src={`/avatars/${patient.name.replace(' ', '-')}.png`} data-ai-hint="person avatar" />
+                         <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(patient.name)}`} data-ai-hint="person avatar" />
                         <AvatarFallback>{getPatientInitials(patient.name)}</AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{patient.name}</span>

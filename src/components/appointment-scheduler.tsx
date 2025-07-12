@@ -147,6 +147,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
             gender: 'آخر',
             phone: newPatientPhone,
             address: newPatientAddress,
+            avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(newPatientName)}`
         };
         onPatientCreated(newPatient);
         toast({
@@ -168,6 +169,14 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
     if (doctorId) return 'حجز موعد';
     return 'موعد جديد';
   }
+  
+  const getPatientInitials = (name: string) => {
+    const names = name.split(" ")
+    return names.length > 1
+      ? `${names[0][0]}${names[names.length - 1][0]}`
+      : names[0]?.[0] || ""
+  }
+
 
   const isNewPatientFlow = context === 'new-patient';
   const isDoctorSelectionDisabled = !selectedPatientId && !doctorId;
@@ -176,7 +185,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">{getButtonText()}</Button>
+        <Button>{getButtonText()}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -328,6 +337,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
         )}
 
         <DialogFooter>
+           <Button variant="secondary" onClick={() => setOpen(false)}>إلغاء</Button>
           <Button onClick={isNewPatientFlow ? handleCreatePatient : handleConfirmAppointment}>
             {isNewPatientFlow ? 'إنشاء المريض' : 'تأكيد الموعد'}
           </Button>

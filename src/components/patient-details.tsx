@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -22,7 +23,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { mockAppointments, mockTransactions } from "@/lib/mock-data"
 import type { Patient, Appointment, Transaction } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
-import { Separator } from "./ui/separator"
 import { Cake, VenetianMask, Phone, Home, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "./ui/button"
 import { getPatientSummaryAction } from "@/lib/actions"
@@ -76,27 +76,29 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
       setIsLoadingSummary(false)
     }
   }
+  
+  useEffect(() => {
+    // Reset state when dialog closes or patient changes
+    if (!isOpen) {
+      setSummary(null);
+      setIsLoadingSummary(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && patient && !summary) {
+    if (isOpen && patient) {
         handleGenerateSummary();
     }
   }, [isOpen, patient]);
 
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      onOpenChange(open);
-      if (!open) {
-        setSummary(null);
-        setIsLoadingSummary(false);
-      }
-    }}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <div className="flex items-center gap-4">
              <Avatar className="h-20 w-20">
-              <AvatarImage src={`/avatars/${patient.name.replace(' ', '-')}.png`} data-ai-hint="person avatar" />
+              <AvatarImage src={patient.avatarUrl} data-ai-hint="person avatar" />
               <AvatarFallback className="text-2xl">{getPatientInitials(patient.name)}</AvatarFallback>
             </Avatar>
             <div>
@@ -105,7 +107,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             </div>
           </div>
         </DialogHeader>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[70vh] overflow-y-auto pr-2">
             <div className="md:col-span-2 space-y-6">
                  <div>
                     <h3 className="text-lg font-semibold mb-3">معلومات المريض</h3>
@@ -131,7 +133,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                  <div>
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold">ملخص بالذكاء الاصطناعي</h3>
-                         <Button variant="ghost" size="sm" onClick={handleGenerateSummary} disabled={isLoadingSummary}>
+                         <Button variant="ghost" size="icon" onClick={handleGenerateSummary} disabled={isLoadingSummary} className="h-8 w-8">
                             {isLoadingSummary ? (
                                 <Loader2 className="animate-spin h-4 w-4" />
                             ) : (
@@ -237,6 +239,9 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                 </div>
             </div>
         </div>
+         <DialogFooter>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>إغلاق</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -3,9 +3,10 @@ export interface Patient {
   name: string;
   email: string;
   dob: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'ذكر' | 'أنثى' | 'آخر';
   phone: string;
   address: string;
+  avatarUrl?: string;
 }
 
 export interface Doctor {

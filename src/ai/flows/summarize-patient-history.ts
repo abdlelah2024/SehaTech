@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Implements an AI flow to summarize a patient's history.
@@ -28,7 +29,7 @@ const SummarizePatientHistoryInputSchema = z.object({
 export type SummarizePatientHistoryInput = z.infer<typeof SummarizePatientHistoryInputSchema>;
 
 const SummarizePatientHistoryOutputSchema = z.object({
-  summary: z.string().describe("A concise clinical summary of the patient's history, highlighting key information like recent visits, upcoming appointments, and specialties of doctors seen. Should be in paragraph form."),
+  summary: z.string().describe("A concise clinical summary of the patient's history in Arabic, highlighting key information like recent visits, upcoming appointments, and specialties of doctors seen. Should be in paragraph form."),
 });
 export type SummarizePatientHistoryOutput = z.infer<typeof SummarizePatientHistoryOutputSchema>;
 
@@ -41,21 +42,21 @@ const prompt = ai.definePrompt({
   name: 'summarizePatientHistoryPrompt',
   input: {schema: SummarizePatientHistoryInputSchema},
   output: {schema: SummarizePatientHistoryOutputSchema},
-  prompt: `You are a helpful clinical assistant. Your task is to generate a concise summary of a patient's record.
-  The summary should be easy to read for a clinician, highlighting the most important information.
+  prompt: `أنت مساعد طبي ذكي. مهمتك هي إنشاء ملخص موجز لسجل المريض باللغة العربية.
+  يجب أن يكون الملخص سهل القراءة للطبيب، مع إبراز أهم المعلومات.
 
-  Patient Information:
-  - Name: {{{patient.name}}}
-  - Date of Birth: {{{patient.dob}}}
-  - Gender: {{{patient.gender}}}
+  معلومات المريض:
+  - الاسم: {{{patient.name}}}
+  - تاريخ الميلاد: {{{patient.dob}}}
+  - الجنس: {{{patient.gender}}}
 
-  Appointment History:
+  تاريخ المواعيد:
   {{#each appointments}}
-  - {{dateTime}}: Appointment with {{doctorName}} ({{doctorSpecialty}}). Status: {{status}}.
+  - {{dateTime}}: موعد مع {{doctorName}} ({{doctorSpecialty}}). الحالة: {{status}}.
   {{/each}}
 
-  Based on the data provided, generate a clinical summary. Focus on the frequency of visits, the range of specialties they have seen, and any upcoming scheduled appointments.
-  Provide the output as a single paragraph.
+  بناءً على البيانات المقدمة، قم بإنشاء ملخص طبي. ركز على وتيرة الزيارات، ومجموعة التخصصات التي قام بزيارتها، وأي مواعيد قادمة مجدولة.
+  قدم المخرجات كفقرة واحدة باللغة العربية.
   `,
   config: {
     safetySettings: [
