@@ -47,7 +47,6 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) =>
       patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
-      (patient.email && patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())) ||
       (patient.phone && patient.phone.includes(localSearchTerm))
     )
   }, [patients, localSearchTerm]);
@@ -73,7 +72,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
         <CardContent>
            <div className="mb-4">
              <Input
-              placeholder="ابحث بالاسم أو البريد الإلكتروني أو رقم الهاتف..."
+              placeholder="ابحث بالاسم أو رقم الهاتف..."
               className="max-w-full"
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
@@ -84,8 +83,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
               <TableHeader>
                 <TableRow>
                   <TableHead>المريض</TableHead>
-                  <TableHead>البريد الإلكتروني</TableHead>
-                  <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+                  <TableHead>رقم الهاتف</TableHead>
                   <TableHead className="hidden sm:table-cell">إجمالي المواعيد</TableHead>
                   <TableHead className="text-left">الإجراءات</TableHead>
                 </TableRow>
@@ -102,8 +100,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                         <span className="font-medium">{patient.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{patient.email}</TableCell>
-                    <TableCell className="hidden md:table-cell">{patient.phone}</TableCell>
+                    <TableCell>{patient.phone}</TableCell>
                     <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
                     <TableCell className="text-left">
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); }}>عرض الملف</Button>
@@ -111,7 +108,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                   </TableRow>
                 )) : (
                   <TableRow>
-                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                           لا يوجد مرضى يطابقون معايير البحث.
                       </TableCell>
                   </TableRow>

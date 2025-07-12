@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { mockAppointments, mockTransactions } from "@/lib/mock-data"
 import type { Patient, Appointment, Transaction } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
-import { Cake, VenetianMask, Phone, Home } from "lucide-react"
+import { Cake, VenetianMask, Phone, Home, Mail } from "lucide-react"
 import { Button } from "./ui/button"
 
 interface PatientDetailsProps {
@@ -63,7 +63,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             </Avatar>
             <div>
               <DialogTitle className="text-2xl">{patient.name}</DialogTitle>
-              <DialogDescription>{patient.email}</DialogDescription>
+              <DialogDescription>{patient.phone}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -83,6 +83,10 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                         <div className="flex items-center gap-3">
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <span>{patient.phone}</span>
+                       </div>
+                        <div className="flex items-center gap-3">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span>{patient.email}</span>
                        </div>
                        <div className="flex items-center gap-3">
                             <Home className="h-4 w-4 text-muted-foreground" />

@@ -24,7 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Sparkles, Loader2 } from "lucide-react"
+import { CalendarIcon, Sparkles, Loader2, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -143,11 +143,11 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   }
 
   const handleCreatePatient = () => {
-    if (!newPatientName || !newPatientEmail || !newPatientDob) {
+    if (!newPatientName || !newPatientPhone || !newPatientDob) {
        toast({
         variant: "destructive",
         title: "معلومات ناقصة",
-        description: "يرجى تعبئة جميع الحقول المطلوبة (الاسم، البريد الإلكتروني، تاريخ الميلاد).",
+        description: "يرجى تعبئة جميع الحقول المطلوبة (الاسم، الهاتف، تاريخ الميلاد).",
       });
       return;
     }
@@ -227,8 +227,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
               <Input id="name" placeholder="مثال: أحمد علي" className="col-span-3" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-              <Input id="email" type="email" placeholder="email@example.com" className="col-span-3" value={newPatientEmail} onChange={(e) => setNewPatientEmail(e.target.value)} />
+              <Label htmlFor="phone" className="text-right">الهاتف</Label>
+              <Input id="phone" type="tel" placeholder="777xxxxxx" className="col-span-3" value={newPatientPhone} onChange={(e) => setNewPatientPhone(e.target.value)} />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="dob" className="text-right">تاريخ الميلاد</Label>
@@ -259,12 +259,12 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                 </Popover>
               </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">الهاتف</Label>
-              <Input id="phone" type="tel" placeholder="777xxxxxx" className="col-span-3" value={newPatientPhone} onChange={(e) => setNewPatientPhone(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="address" className="text-right">العنوان</Label>
               <Input id="address" placeholder="صنعاء، شارع تعز" className="col-span-3" value={newPatientAddress} onChange={(e) => setNewPatientAddress(e.target.value)} />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">البريد الإلكتروني <span className="text-muted-foreground text-xs">(اختياري)</span></Label>
+              <Input id="email" type="email" placeholder="email@example.com" className="col-span-3" value={newPatientEmail} onChange={(e) => setNewPatientEmail(e.target.value)} />
             </div>
           </div>
         ) : (
