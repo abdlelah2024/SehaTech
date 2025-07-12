@@ -115,7 +115,7 @@ export function Overview() {
             <CardDescription>الأطباء الأعلى تقييماً والمتاحون.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Carousel
+             <Carousel
               opts={{
                 align: "start",
                 loop: true,
@@ -123,7 +123,7 @@ export function Overview() {
               }}
               className="w-full max-w-4xl mx-auto"
             >
-              <CarouselContent>
+              <CarouselContent dir="rtl">
                 {mockDoctors.map((doctor) => (
                   <CarouselItem key={doctor.id} className="md:basis-1/2 lg:basis-1/3">
                     <div className="p-1">
@@ -152,8 +152,8 @@ export function Overview() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="right-[-1rem] -translate-x-0" />
-              <CarouselNext className="left-[-1rem] -translate-x-0"/>
+              <CarouselPrevious />
+              <CarouselNext />
             </Carousel>
           </CardContent>
         </Card>

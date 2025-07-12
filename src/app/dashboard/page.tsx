@@ -60,6 +60,7 @@ export default function Dashboard() {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TabValue);
+    window.history.pushState({}, '', `/dashboard?tab=${value}`);
     setIsSheetOpen(false); // Close sheet on tab change
   }
 
@@ -93,7 +94,6 @@ export default function Dashboard() {
           onClick={(e) => {
             e.preventDefault(); // Prevent full page reload
             handleTabChange(link.id)
-            window.history.pushState({}, '', link.href);
           }}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
@@ -104,7 +104,7 @@ export default function Dashboard() {
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
           {link.badge && (
-             <Badge className="mr-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+             <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
           )}
@@ -115,8 +115,25 @@ export default function Dashboard() {
 
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
-       <div className="flex flex-col">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+       <div className="hidden border-l bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <Stethoscope className="h-6 w-6 text-primary" />
+              <span className="">صحة تك</span>
+            </Link>
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -139,11 +156,11 @@ export default function Dashboard() {
           <div className="w-full flex-1">
              <form>
               <div className="relative">
-                <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="بحث..."
-                  className="w-full appearance-none bg-background pr-8 shadow-none md:w-2/3 lg:w-1/3"
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                   value={globalSearchTerm}
                   onChange={(e) => setGlobalSearchTerm(e.target.value)}
                 />
@@ -194,23 +211,6 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         </main>
-      </div>
-      <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Stethoscope className="h-6 w-6 text-primary" />
-              <span className="">صحة تك</span>
-            </Link>
-            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
       </div>
     </div>
   )

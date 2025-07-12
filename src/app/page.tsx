@@ -32,8 +32,8 @@ export default function LoginPage() {
           <div className="grid gap-2">
             <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
             <div className="relative">
-                <Mail className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="m@example.com" required className="pr-8 text-right" />
+                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="email" type="email" placeholder="m@example.com" required className="pl-8 text-right" />
             </div>
           </div>
           <div className="grid gap-2">
@@ -45,8 +45,8 @@ export default function LoginPage() {
             </div>
 
             <div className="relative">
-                <Key className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="password" type="password" required className="pr-8 text-right" />
+                <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="password" type="password" required className="pl-8 text-right" />
             </div>
           </div>
         </CardContent>
