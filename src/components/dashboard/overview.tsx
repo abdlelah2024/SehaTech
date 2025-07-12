@@ -1,5 +1,6 @@
+
 "use client"
-import { DollarSign, Users, CalendarPlus, Stethoscope, Activity } from "lucide-react"
+import { Users, CalendarPlus, Stethoscope, Activity } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -20,6 +21,27 @@ import {
 } from "@/components/ui/carousel"
 import Image from "next/image"
 
+function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
+
 export function Overview() {
   const totalPatients = mockPatients.length;
   const activeDoctors = mockDoctors.filter(d => d.isAvailableToday).length;
@@ -36,11 +58,11 @@ export function Overview() {
             <CardTitle className="text-sm font-medium">
               إجمالي الإيرادات
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+             <span className="text-muted-foreground">﷼</span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <p className="text-xs text-muted-foreground text-right">
+            <div className="text-2xl font-bold">{totalRevenue.toLocaleString('ar-EG')} ﷼</div>
+            <p className="text-xs text-muted-foreground">
               +20.1% من الشهر الماضي
             </p>
           </CardContent>
@@ -66,7 +88,7 @@ export function Overview() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{newAppointments}</div>
-            <p className="text-xs text-muted-foreground text-right">
+            <p className="text-xs text-muted-foreground">
               +19% من الشهر الماضي
             </p>
           </CardContent>

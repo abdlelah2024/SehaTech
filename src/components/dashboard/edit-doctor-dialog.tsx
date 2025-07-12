@@ -113,9 +113,9 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="price" className="text-right">
-              سعر الكشفية ($)
+              سعر الكشفية (﷼)
             </Label>
-            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="50" />
+            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="5000" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="returnDays" className="text-right">

@@ -2,7 +2,6 @@
 export interface Patient {
   id: string;
   name: string;
-  email: string;
   dob: string;
   gender: 'ذكر' | 'أنثى' | 'آخر';
   phone: string;

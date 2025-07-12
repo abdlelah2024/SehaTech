@@ -22,7 +22,7 @@ import {
 import { mockDoctors } from "@/lib/mock-data"
 import Image from "next/image"
 import { AppointmentScheduler } from "../appointment-scheduler"
-import { X, Calendar, DollarSign, Repeat, Edit, Trash2 } from "lucide-react"
+import { X, Calendar, Edit, Trash2, Repeat } from "lucide-react"
 import { AddDoctorDialog } from "./add-doctor-dialog"
 import { EditDoctorDialog } from "./edit-doctor-dialog"
 import {
@@ -38,6 +38,27 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
+
+function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
 
 interface DoctorsTabProps {
   searchTerm: string;
@@ -132,7 +153,7 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
                   <div className="flex items-center gap-4">
                     <Image
                       src={doctor.image}
-                      alt={`Dr. ${doctor.name}`}
+                      alt={`د. ${doctor.name}`}
                       width={60}
                       height={60}
                       className="rounded-full"
@@ -146,11 +167,13 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
                    <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDoctorToEdit(doctor)}>
                           <Edit className="h-4 w-4" />
+                          <span className="sr-only">تعديل</span>
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                              <Trash2 className="h-4 w-4" />
+                             <span className="sr-only">حذف</span>
                            </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -173,12 +196,12 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
             </CardHeader>
             <CardContent className="flex-grow space-y-2 text-sm text-muted-foreground">
                <div className="flex items-center gap-2">
-                 <DollarSign className="h-4 w-4" />
-                 <span>سعر الكشفية: ${doctor.servicePrice?.toFixed(2) ?? 'N/A'}</span>
+                 <span className="font-bold text-lg">﷼</span>
+                 <span>سعر الكشفية: {doctor.servicePrice?.toLocaleString('ar-EG') ?? 'غير محدد'}</span>
                </div>
                 <div className="flex items-center gap-2">
                   <Repeat className="h-4 w-4" />
-                 <span>عودة مجانية: {doctor.freeReturnDays ?? 'N/A'} أيام</span>
+                 <span>عودة مجانية: {doctor.freeReturnDays ?? 'غير محدد'} أيام</span>
                </div>
                <div className="flex items-start gap-2">
                   <Calendar className="h-4 w-4 mt-1" />

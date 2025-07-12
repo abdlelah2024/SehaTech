@@ -42,6 +42,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   const getAge = (dob: string) => {
+    if (!dob) return '';
     const birthDate = new Date(dob);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -84,10 +85,6 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <span>{patient.phone}</span>
                        </div>
-                        <div className="flex items-center gap-3">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span>{patient.email}</span>
-                       </div>
                        <div className="flex items-center gap-3">
                             <Home className="h-4 w-4 text-muted-foreground" />
                             <span>{patient.address}</span>
@@ -115,7 +112,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                 <div className="font-medium">{appointment.doctorName}</div>
                                 <div className="text-xs text-muted-foreground">{appointment.doctorSpecialty}</div>
                               </TableCell>
-                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG')}</TableCell>
+                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</TableCell>
                               <TableCell>
                                 <Badge variant={
                                   appointment.status === 'Completed' ? 'success' :
@@ -159,7 +156,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             <TableRow key={transaction.id}>
                                <TableCell>{transaction.service}</TableCell>
                                <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
-                               <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                               <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                                <TableCell>
                                  <Badge variant={
                                    transaction.status === 'Success' ? 'success' : 'destructive'

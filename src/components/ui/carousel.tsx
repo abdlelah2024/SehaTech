@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -207,17 +208,17 @@ const CarouselPrevious = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        "absolute  h-8 w-8 rounded-full",
+        "absolute h-8 w-8 rounded-full",
         orientation === "horizontal"
-          ? "-right-12 top-1/2 -translate-y-1/2"
-          : "-top-12 right-1/2 -translate-x-1/2 rotate-90",
+          ? " right-12 top-1/2 -translate-y-1/2" 
+          : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
       disabled={!canScrollPrev}
       onClick={scrollPrev}
       {...props}
     >
-      {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+      <ArrowRight className="h-4 w-4" />
       <span className="sr-only">السابق</span>
     </Button>
   )
@@ -229,8 +230,6 @@ const CarouselNext = React.forwardRef<
   React.ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
   const { orientation, scrollNext, canScrollNext, opts } = useCarousel()
-    const isRTL = opts?.direction === 'rtl';
-
 
   return (
     <Button
@@ -240,7 +239,7 @@ const CarouselNext = React.forwardRef<
       className={cn(
         "absolute h-8 w-8 rounded-full",
         orientation === "horizontal"
-          ? "-left-12 top-1/2 -translate-y-1/2"
+          ? " left-12 top-1/2 -translate-y-1/2"
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
@@ -248,7 +247,7 @@ const CarouselNext = React.forwardRef<
       onClick={scrollNext}
       {...props}
     >
-       {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+       <ArrowLeft className="h-4 w-4" />
       <span className="sr-only">التالي</span>
     </Button>
   )

@@ -133,5 +133,3 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
     </>
   )
 }
-
-    

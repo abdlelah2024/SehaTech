@@ -10,7 +10,6 @@ const patientNames = [
 export const mockPatients: Patient[] = patientNames.map((name, index) => ({
   id: `patient-${index + 1}`,
   name: name,
-  email: `${name.split(' ').join('.').toLowerCase()}@example.com`,
   dob: `${1980 + (index * 2)}-${(index % 12) + 1}-${(index % 28) + 1}`,
   gender: index % 3 === 0 ? 'ذكر' : 'أنثى',
   phone: `777-010${index + 1}`,
@@ -31,7 +30,7 @@ export const mockDoctors: Doctor[] = [
       { date: '2024-08-01', slots: ['10:00', '10:30', '14:00', '14:30'] },
       { date: '2024-08-02', slots: ['09:00', '09:30', '11:00'] },
     ],
-    servicePrice: 75,
+    servicePrice: 7500,
     freeReturnDays: 14,
     availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
   },
@@ -46,7 +45,7 @@ export const mockDoctors: Doctor[] = [
        { date: '2024-08-01', slots: ['14:00', '14:30', '15:00', '15:30'] },
        { date: '2024-08-03', slots: ['10:00', '10:30'] },
     ],
-    servicePrice: 60,
+    servicePrice: 6000,
     freeReturnDays: 10,
     availableDays: ['السبت', 'الاثنين', 'الأربعاء'],
   },
@@ -60,7 +59,7 @@ export const mockDoctors: Doctor[] = [
     availability: [
        { date: '2024-08-05', slots: ['09:00', '09:30', '10:00'] },
     ],
-    servicePrice: 50,
+    servicePrice: 5000,
     freeReturnDays: 7,
     availableDays: ['الاثنين', 'الأربعاء', 'الجمعة'],
   },
@@ -75,7 +74,7 @@ export const mockDoctors: Doctor[] = [
       { date: '2024-08-01', slots: ['11:30', '12:00', '16:00'] },
       { date: '2024-08-02', slots: ['14:00', '14:30'] },
     ],
-    servicePrice: 90,
+    servicePrice: 9000,
     freeReturnDays: 21,
     availableDays: ['السبت', 'الأحد', 'الثلاثاء', 'الخميس'],
   }
@@ -184,9 +183,9 @@ export const mockRecentActivities: RecentActivity[] = [
 ];
 
 export const mockTransactions: Transaction[] = [
-  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 150.00, status: 'Success', service: 'فحص جلدية' },
-  { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 200.00, status: 'Success', service: 'زيارة متابعة' },
-  { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 75.50, status: 'Success', service: 'أشعة سينية' },
-  { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 110.00, status: 'Failed', service: 'تطعيم' },
-  { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 300.00, status: 'Success', service: 'تخطيط قلب' },
+  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدية' },
+  { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'زيارة متابعة' },
+  { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
+  { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },
+  { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'تخطيط قلب' },
 ];

@@ -24,14 +24,13 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Sparkles, Loader2, Mail } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { mockPatients, mockDoctors, mockAppointments } from "@/lib/mock-data"
+import { mockPatients, mockDoctors } from "@/lib/mock-data"
 import { useToast } from "@/hooks/use-toast"
 import type { Appointment, Patient, Doctor } from "@/lib/types"
-import { suggestOptimalAppointmentSlots } from "@/ai/flows/suggest-optimal-appointment-slots"
 
 interface AppointmentSchedulerProps {
   doctorId?: string;
@@ -49,68 +48,13 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   const { toast } = useToast()
 
   const [newPatientName, setNewPatientName] = useState("")
-  const [newPatientEmail, setNewPatientEmail] = useState("")
   const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientAddress, setNewPatientAddress] = useState("")
   
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
-  const [suggestedSlots, setSuggestedSlots] = useState<{ date: string; time: string; reason: string }[]>([])
-
-
   useEffect(() => {
     setSelectedDoctorId(doctorId);
   }, [doctorId]);
-
-  const handleSuggestSlots = async () => {
-    if (!selectedPatientId || !selectedDoctorId) {
-      toast({
-        variant: 'destructive',
-        title: 'معلومات ناقصة',
-        description: 'يرجى اختيار المريض والطبيب أولاً.',
-      });
-      return;
-    }
-    
-    setIsLoadingSuggestions(true);
-    setSuggestedSlots([]);
-
-    const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
-    const patientAppointments = mockAppointments.filter(a => a.patientId === selectedPatientId);
-
-    if (!doctor) return;
-
-    try {
-      const result = await suggestOptimalAppointmentSlots({
-        patientId: selectedPatientId,
-        doctorId: selectedDoctorId,
-        appointmentHistory: patientAppointments.map(a => ({
-          date: new Date(a.dateTime).toISOString().split('T')[0],
-          time: new Date(a.dateTime).toTimeString().split(' ')[0].substring(0, 5),
-        })),
-        doctorAvailability: doctor.availability,
-      });
-
-      if (result && result.suggestedSlots) {
-        setSuggestedSlots(result.suggestedSlots);
-         toast({
-          title: "تم اقتراح مواعيد بنجاح!",
-          description: `تم العثور على ${result.suggestedSlots.length} مواعيد مقترحة.`,
-        });
-      }
-
-    } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "خطأ في الاقتراح",
-        description: "حدث خطأ أثناء محاولة اقتراح المواعيد.",
-      });
-      console.error("Error suggesting slots:", error);
-    } finally {
-        setIsLoadingSuggestions(false);
-    }
-
-  };
 
   const handleConfirmAppointment = () => {
     if (!selectedPatientId || !selectedDoctorId || !date) {
@@ -156,7 +100,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
         const newPatient: Patient = {
             id: `patient-${Date.now()}`,
             name: newPatientName,
-            email: newPatientEmail,
             dob: format(newPatientDob, "yyyy-MM-dd"),
             gender: 'آخر',
             phone: newPatientPhone,
@@ -187,15 +130,12 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   
   const resetAndClose = () => {
     setNewPatientName("");
-    setNewPatientEmail("");
     setNewPatientDob(undefined);
     setNewPatientPhone("");
     setNewPatientAddress("");
     setSelectedPatientId(undefined);
     setSelectedDoctorId(doctorId);
     setDate(new Date());
-    setSuggestedSlots([]);
-    setIsLoadingSuggestions(false);
     setOpen(false);
   }
 
@@ -262,10 +202,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
               <Label htmlFor="address" className="text-right">العنوان</Label>
               <Input id="address" placeholder="صنعاء، شارع تعز" className="col-span-3" value={newPatientAddress} onChange={(e) => setNewPatientAddress(e.target.value)} />
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">البريد الإلكتروني <span className="text-muted-foreground text-xs">(اختياري)</span></Label>
-              <Input id="email" type="email" placeholder="email@example.com" className="col-span-3" value={newPatientEmail} onChange={(e) => setNewPatientEmail(e.target.value)} />
-            </div>
           </div>
         ) : (
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
@@ -288,43 +224,13 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
               </Label>
               <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId} disabled={isDoctorSelectionDisabled}>
                 <SelectTrigger id="doctor" className="col-span-3">
-                  <SelectValue placeholder={isDoctorSelectionDisabled ? "محدد مسبقًا" : "اختر طبيباً"} />
+                  <SelectValue placeholder={isDoctorSelectionDisabled ? `د. ${mockDoctors.find(d => d.id === doctorId)?.name}` : "اختر طبيباً"} />
                 </SelectTrigger>
                 <SelectContent>
                   {mockDoctors.map(d => <SelectItem key={d.id} value={d.id}>د. {d.name} ({d.specialty})</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">اقتراح ذكي</Label>
-                <div className="col-span-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={handleSuggestSlots}
-                        disabled={isLoadingSuggestions || !selectedPatientId || !selectedDoctorId}
-                    >
-                        {isLoadingSuggestions ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                        {isLoadingSuggestions ? "جاري البحث..." : "اقتراح موعد مثالي"}
-                    </Button>
-                </div>
-            </div>
-
-            {suggestedSlots.length > 0 && (
-                <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">المواعيد المقترحة</Label>
-                    <div className="col-span-3 space-y-2">
-                       {suggestedSlots.map((slot, index) => (
-                          <Button key={index} variant="ghost" className="w-full justify-start p-2 h-auto flex flex-col items-start border" onClick={() => setDate(new Date(`${slot.date}T${slot.time}`))}>
-                             <div className="font-semibold">{format(new Date(`${slot.date}T${slot.time}`), "PPPPp", { locale: ar })}</div>
-                             <div className="text-xs text-muted-foreground font-normal">{slot.reason}</div>
-                          </Button>
-                       ))}
-                    </div>
-                </div>
-            )}
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">
@@ -381,5 +287,3 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
     </Dialog>
   )
 }
-
-    

@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { mockTransactions, mockPatients, mockAppointments } from "@/lib/mock-data"
-import type { Transaction, Patient } from "@/lib/types";
+import type { Transaction } from "@/lib/types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -34,8 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2 } from "lucide-react";
-import { suggestBillingService } from "@/ai/flows/suggest-billing-service";
 
 interface BillingTabProps {
   searchTerm: string;
@@ -48,60 +46,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [amount, setAmount] = useState("");
   const [service, setService] = useState("");
   const { toast } = useToast();
-  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
-
-  const handleSuggestService = async () => {
-    if (!selectedPatientId) {
-       toast({
-        variant: "destructive",
-        title: "لم يتم تحديد مريض",
-        description: "الرجاء اختيار مريض أولاً لاقتراح خدمة.",
-      });
-      return;
-    }
-    setIsLoadingSuggestion(true);
-    try {
-      const recentAppointments = mockAppointments
-        .filter((a) => a.patientId === selectedPatientId && a.status === 'Completed')
-        .sort((a,b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-
-
-      if (recentAppointments.length === 0) {
-        toast({
-          title: "لا يوجد تاريخ للمريض",
-          description: "لا يمكن اقتراح خدمة لعدم وجود مواعيد مكتملة.",
-        });
-        return;
-      }
-      
-      const result = await suggestBillingService({
-        patientId: selectedPatientId,
-        recentAppointments: recentAppointments.map(a => ({
-            doctorSpecialty: a.doctorSpecialty,
-            dateTime: a.dateTime,
-            status: a.status
-        }))
-      });
-
-      if (result && result.service) {
-        setService(result.service);
-        toast({
-          title: "تم اقتراح الخدمة بنجاح!",
-        });
-      }
-
-    } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "خطأ في الاقتراح",
-        description: "حدث خطأ أثناء محاولة اقتراح الخدمة.",
-      });
-      console.error("Error suggesting service:", error);
-    } finally {
-        setIsLoadingSuggestion(false);
-    }
-  };
-
 
   const handleRecordTransaction = () => {
     if (!selectedPatientId || !amount || !service) {
@@ -148,7 +92,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     setSelectedPatientId(undefined);
     setAmount("");
     setService("");
-    setIsLoadingSuggestion(false);
   }, []);
 
   useEffect(() => {
@@ -194,15 +137,11 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                   <Label htmlFor="service" className="text-right">الخدمة</Label>
                   <div className="col-span-3 flex items-center gap-2">
                      <Input id="service" placeholder="مثال: فحص عام" className="flex-grow" value={service} onChange={(e) => setService(e.target.value)} />
-                      <Button variant="outline" size="icon" onClick={handleSuggestService} disabled={isLoadingSuggestion || !selectedPatientId}>
-                          {isLoadingSuggestion ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                          <span className="sr-only">Suggest Service</span>
-                      </Button>
                   </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="amount" className="text-right">المبلغ ($)</Label>
-                  <Input id="amount" type="number" placeholder="150.00" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Label htmlFor="amount" className="text-right">المبلغ (﷼)</Label>
+                  <Input id="amount" type="number" placeholder="5000" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
@@ -227,11 +166,11 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs text-left">{transaction.id}</TableCell>
+                <TableCell className="font-mono text-xs text-left" dir="ltr">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>
                 <TableCell>{transaction.service}</TableCell>
                 <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
-                <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                 <TableCell>
                    <Badge variant={
                      transaction.status === 'Success' ? 'success' : 'destructive'
