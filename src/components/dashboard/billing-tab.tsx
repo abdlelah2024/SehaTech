@@ -78,7 +78,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     });
 
     setIsDialogOpen(false);
-  }
+  };
 
   const filteredTransactions = useMemo(() => {
     if (!searchTerm) return transactions;
@@ -166,7 +166,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs text-left" dir="ltr">{transaction.id}</TableCell>
+                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>
                 <TableCell>{transaction.service}</TableCell>
                 <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
