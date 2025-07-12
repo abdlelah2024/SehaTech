@@ -36,16 +36,25 @@ import type { Appointment, Patient, Doctor } from "@/lib/types"
 
 interface AppointmentSchedulerProps {
   doctorId?: string;
+  selectedPatientId?: string;
   onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
   onPatientCreated?: (patient: Patient) => void;
   context?: 'new-patient' | 'new-appointment';
+  prefilledData?: { name?: string; phone?: string };
 }
 
 
-export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatientCreated, context = 'new-appointment' }: AppointmentSchedulerProps) {
+export function AppointmentScheduler({ 
+  doctorId, 
+  onAppointmentCreated, 
+  onPatientCreated, 
+  context = 'new-appointment',
+  selectedPatientId: initialSelectedPatientId,
+  prefilledData = {}
+}: AppointmentSchedulerProps) {
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
-  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(initialSelectedPatientId)
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId)
   const [isSuggestingSlots, setIsSuggestingSlots] = useState(false)
   const [suggestedSlots, setSuggestedSlots] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>([])
@@ -59,6 +68,18 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   useEffect(() => {
     setSelectedDoctorId(doctorId);
   }, [doctorId]);
+  
+  useEffect(() => {
+    setSelectedPatientId(initialSelectedPatientId);
+  }, [initialSelectedPatientId]);
+
+  useEffect(() => {
+    if (context === 'new-patient') {
+      setNewPatientName(prefilledData.name || "");
+      setNewPatientPhone(prefilledData.phone || "");
+    }
+  }, [prefilledData, context, open]);
+
 
   const handleSuggestSlots = async () => {
     if (!selectedPatientId || !selectedDoctorId) {
@@ -171,7 +192,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
 
   const getButtonText = () => {
     if (context === 'new-patient') return 'مريض جديد';
-    if (doctorId) return 'حجز موعد';
+    if (doctorId || initialSelectedPatientId) return 'حجز موعد';
     return 'موعد جديد';
   }
   
@@ -187,7 +208,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
     setNewPatientDob(undefined);
     setNewPatientPhone("");
     setNewPatientAddress("");
-    setSelectedPatientId(undefined);
+    setSelectedPatientId(initialSelectedPatientId);
     setSelectedDoctorId(doctorId);
     setDate(new Date());
     setOpen(false);
@@ -217,7 +238,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
         </DialogHeader>
 
         {isNewPatientFlow ? (
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">الاسم الكامل</Label>
               <Input id="name" placeholder="مثال: أحمد علي" className="col-span-3" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} />
@@ -233,12 +254,12 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "col-span-3 justify-start text-right font-normal",
+                        "col-span-3 justify-start text-left font-normal",
                         !newPatientDob && "text-muted-foreground"
                       )}
                     >
+                      <CalendarIcon className="ml-2 h-4 w-4" />
                       {newPatientDob ? format(newPatientDob, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
-                      <CalendarIcon className="mr-auto h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -265,7 +286,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
               <Label htmlFor="patient" className="text-right">
                 المريض
               </Label>
-              <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
+              <Select value={selectedPatientId} onValueChange={setSelectedPatientId} disabled={!!initialSelectedPatientId}>
                 <SelectTrigger id="patient" className="col-span-3">
                   <SelectValue placeholder="اختر مريضاً" />
                 </SelectTrigger>
@@ -290,7 +311,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
             
             <div className="flex justify-end">
                 <Button variant="outline" onClick={handleSuggestSlots} disabled={isSuggestingSlots || !selectedDoctorId || !selectedPatientId}>
-                    {isSuggestingSlots ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Sparkles className="ml-2 h-4 w-4" />}
+                    {isSuggestingSlots ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     اقتراح موعد ذكي
                 </Button>
             </div>
@@ -331,12 +352,12 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "col-span-3 justify-start text-right font-normal",
+                      "col-span-3 justify-start text-left font-normal",
                       !date && "text-muted-foreground"
                     )}
                   >
+                     <CalendarIcon className="ml-2 h-4 w-4" />
                     {date ? format(date, "PPPPp", { locale: ar }) : <span>اختر تاريخاً ووقتاً</span>}
-                     <CalendarIcon className="mr-auto h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
