@@ -50,12 +50,12 @@ export default function Dashboard() {
   }
 
   const navLinks = [
-    { id: "dashboard", label: "الرئيسية", icon: Home },
-    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6" },
-    { id: "doctors", label: "الأطباء", icon: Stethoscope },
-    { id: "patients", label: "المرضى", icon: Users },
-    { id: "billing", label: "الفواتير", icon: CreditCard },
-    { id: "analytics", label: "التحليلات", icon: LineChart },
+    { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard" },
+    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments" },
+    { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors" },
+    { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients" },
+    { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing" },
+    { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics" },
   ];
 
   const renderNavLinks = (isMobile: boolean = false) => (
@@ -66,23 +66,21 @@ export default function Dashboard() {
         <Link
           href="#"
           className="flex items-center gap-2 text-lg font-semibold mb-4"
+          onClick={() => setIsSheetOpen(false)}
         >
           <Stethoscope className="h-6 w-6 text-primary" />
-          <span className="sr-only">صحة تك</span>
+          <span className="">صحة تك</span>
         </Link>
       )}
       {navLinks.map((link) => (
-        <button
+        <Link
           key={link.id}
-          onClick={() => {
-             handleTabChange(link.id)
-          }}
+          href={link.href}
+          onClick={() => handleTabChange(link.id)}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
              activeTab === link.id ? "bg-muted text-primary" : "text-muted-foreground",
              isMobile && "mx-[-0.65rem] gap-4 rounded-xl",
-             isMobile && activeTab === link.id && "bg-muted text-foreground",
-             isMobile && activeTab !== link.id && "text-muted-foreground hover:text-foreground"
           )}
         >
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
@@ -92,7 +90,7 @@ export default function Dashboard() {
               {link.badge}
             </Badge>
           )}
-        </button>
+        </Link>
       ))}
     </nav>
   );
