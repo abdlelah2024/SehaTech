@@ -46,8 +46,8 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
     <Card>
        <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Appointments</CardTitle>
-            <CardDescription>Manage and view all patient appointments.</CardDescription>
+            <CardTitle>المواعيد</CardTitle>
+            <CardDescription>إدارة وعرض جميع مواعيد المرضى.</CardDescription>
           </div>
           <AppointmentScheduler onAppointmentCreated={handleAppointmentCreated} />
         </CardHeader>
@@ -55,11 +55,11 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Doctor</TableHead>
-              <TableHead>Specialty</TableHead>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>المريض</TableHead>
+              <TableHead>الطبيب</TableHead>
+              <TableHead>التخصص</TableHead>
+              <TableHead>التاريخ والوقت</TableHead>
+              <TableHead>الحالة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -68,7 +68,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                 <TableCell>{appointment.patientName}</TableCell>
                 <TableCell>{appointment.doctorName}</TableCell>
                 <TableCell>{appointment.doctorSpecialty}</TableCell>
-                <TableCell>{new Date(appointment.dateTime).toLocaleString()}</TableCell>
+                <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG')}</TableCell>
                 <TableCell>
                    <Badge variant={
                      appointment.status === 'Completed' ? 'success' :
@@ -76,7 +76,12 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                      appointment.status === 'Waiting' ? 'waiting' :
                      'followup'
                    }>
-                    {appointment.status}
+                    {
+                      appointment.status === 'Completed' ? 'مكتمل' :
+                      appointment.status === 'Scheduled' ? 'مجدول' :
+                      appointment.status === 'Waiting' ? 'في الانتظار' :
+                      'عودة'
+                    }
                   </Badge>
                 </TableCell>
               </TableRow>

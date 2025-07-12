@@ -56,8 +56,8 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     if (!selectedPatientId || !amount || !service) {
       toast({
         variant: "destructive",
-        title: "Missing Information",
-        description: "Please fill out all fields.",
+        title: "معلومات ناقصة",
+        description: "يرجى تعبئة جميع الحقول.",
       });
       return;
     }
@@ -71,18 +71,17 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
       patientName: patient.name,
       date: new Date().toISOString(),
       amount: parseFloat(amount),
-      status: 'Success', // Assuming success for now
+      status: 'Success',
       service,
     };
 
     setTransactions(prev => [newTransaction, ...prev]);
 
     toast({
-      title: "Transaction Recorded",
-      description: `Charge of $${amount} for ${patient.name} has been recorded.`,
+      title: "تم تسجيل الفاتورة",
+      description: `تم تسجيل فاتورة بمبلغ ${amount} لـ ${patient.name}.`,
     });
 
-    // Reset form
     setIsDialogOpen(false);
     setSelectedPatientId(undefined);
     setAmount("");
@@ -99,15 +98,15 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         setService(result.service);
       } else {
         toast({
-          title: "No Suggestion",
-          description: "Could not suggest a service for this patient.",
+          title: "لا يوجد اقتراح",
+          description: "تعذر اقتراح خدمة لهذا المريض.",
         })
       }
     } catch (error) {
        toast({
         variant: "destructive",
-        title: "AI Error",
-        description: "Could not get suggestion. Please try again.",
+        title: "خطأ بالذكاء الاصطناعي",
+        description: "تعذر الحصول على الاقتراح. يرجى المحاولة مرة أخرى.",
       });
     } finally {
       setIsSuggesting(false);
@@ -127,8 +126,8 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     <Card className="mt-4">
        <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Billing</CardTitle>
-            <CardDescription>View and manage all financial transactions.</CardDescription>
+            <CardTitle>الفواتير</CardTitle>
+            <CardDescription>عرض وإدارة جميع المعاملات المالية.</CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -139,23 +138,23 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
             }
           }}>
             <DialogTrigger asChild>
-              <Button>Record Transaction</Button>
+              <Button>تسجيل فاتورة</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Record New Transaction</DialogTitle>
+                <DialogTitle>تسجيل فاتورة جديدة</DialogTitle>
                 <DialogDescription>
-                  Enter the details for the new charge.
+                  أدخل تفاصيل الفاتورة الجديدة.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="patient" className="text-right">
-                    Patient
+                    المريض
                   </Label>
                    <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
                     <SelectTrigger id="patient" className="col-span-3">
-                      <SelectValue placeholder="Select a patient" />
+                      <SelectValue placeholder="اختر مريضاً" />
                     </SelectTrigger>
                     <SelectContent>
                       {mockPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -163,8 +162,8 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="service" className="text-right">Service</Label>
-                  <Input id="service" placeholder="e.g. Annual Checkup" className="col-span-3" value={service} onChange={(e) => setService(e.target.value)} />
+                  <Label htmlFor="service" className="text-right">الخدمة</Label>
+                  <Input id="service" placeholder="مثال: فحص عام" className="col-span-3" value={service} onChange={(e) => setService(e.target.value)} />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <div className="col-start-2 col-span-3">
@@ -174,17 +173,17 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
-                      Suggest service with AI
+                      اقتراح الخدمة بالذكاء الاصطناعي
                     </Button>
                   </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="amount" className="text-right">Amount ($)</Label>
+                  <Label htmlFor="amount" className="text-right">المبلغ ($)</Label>
                   <Input id="amount" type="number" placeholder="150.00" className="col-span-3" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleRecordTransaction}>Save Transaction</Button>
+                <Button onClick={handleRecordTransaction}>حفظ الفاتورة</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -193,27 +192,27 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Transaction ID</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>رقم الفاتورة</TableHead>
+              <TableHead>المريض</TableHead>
+              <TableHead>الخدمة</TableHead>
+              <TableHead>التاريخ</TableHead>
+              <TableHead>المبلغ</TableHead>
+              <TableHead>الحالة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-mono text-xs">{transaction.id}</TableCell>
+                <TableCell className="font-mono text-xs text-left">{transaction.id}</TableCell>
                 <TableCell>{transaction.patientName}</TableCell>
                 <TableCell>{transaction.service}</TableCell>
-                <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
                 <TableCell>${transaction.amount.toFixed(2)}</TableCell>
                 <TableCell>
                    <Badge variant={
                      transaction.status === 'Success' ? 'success' : 'destructive'
                    }>
-                    {transaction.status}
+                    {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
                   </Badge>
                 </TableCell>
               </TableRow>

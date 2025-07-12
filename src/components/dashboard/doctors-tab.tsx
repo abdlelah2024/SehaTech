@@ -59,17 +59,17 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
     <div className="mt-4">
       <div className="flex items-center gap-4 mb-4">
         <Input
-          placeholder="Search doctors..."
+          placeholder="بحث عن طبيب..."
           className="max-w-sm"
           value={localSearchTerm}
           onChange={(e) => setLocalSearchTerm(e.target.value)}
         />
         <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by specialty" />
+            <SelectValue placeholder="تصفية حسب التخصص" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Specialties</SelectItem>
+            <SelectItem value="all">كل التخصصات</SelectItem>
             {specialties.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
@@ -79,8 +79,8 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
         </Select>
         {showClearButton && (
           <Button variant="ghost" onClick={handleClearFilters}>
-            <X className="mr-2 h-4 w-4" />
-            Clear
+            <X className="ml-2 h-4 w-4" />
+            مسح
           </Button>
         )}
       </div>
@@ -98,18 +98,18 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
                   data-ai-hint="doctor portrait"
                 />
                 <div>
-                  <CardTitle>Dr. {doctor.name}</CardTitle>
+                  <CardTitle>د. {doctor.name}</CardTitle>
                   <CardDescription>{doctor.specialty}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Next Available: {doctor.nextAvailable}
+                أقرب موعد: {doctor.nextAvailable}
               </p>
               <div className="flex items-center gap-2 mt-2">
                  <span className={`h-2 w-2 rounded-full ${doctor.isAvailableToday ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                 <span className="text-xs">{doctor.isAvailableToday ? 'Available Today' : 'Unavailable Today'}</span>
+                 <span className="text-xs">{doctor.isAvailableToday ? 'متاح اليوم' : 'غير متاح اليوم'}</span>
               </div>
             </CardContent>
             <CardFooter>

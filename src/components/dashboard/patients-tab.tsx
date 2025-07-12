@@ -59,14 +59,14 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
       <Card className="mt-4">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Patients</CardTitle>
+            <CardTitle>المرضى</CardTitle>
             <CardDescription>
-              View and manage all patient records.
+              عرض وإدارة جميع سجلات المرضى.
             </CardDescription>
           </div>
           <div className="flex items-center gap-4">
             <Input
-              placeholder="Search patients..."
+              placeholder="بحث عن مريض..."
               className="max-w-sm"
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
@@ -78,10 +78,10 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Total Appointments</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>المريض</TableHead>
+                <TableHead>البريد الإلكتروني</TableHead>
+                <TableHead>إجمالي المواعيد</TableHead>
+                <TableHead className="text-left">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,8 +98,8 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                   </TableCell>
                   <TableCell>{patient.email}</TableCell>
                   <TableCell>{getPatientAppointmentCount(patient.id)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedPatient(patient)}>View Profile</Button>
+                  <TableCell className="text-left">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedPatient(patient)}>عرض الملف الشخصي</Button>
                   </TableCell>
                 </TableRow>
               ))}

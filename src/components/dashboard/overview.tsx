@@ -34,54 +34,54 @@ export function Overview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Revenue
+              إجمالي الإيرادات
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+            <p className="text-xs text-muted-foreground text-right">
+              +20.1% من الشهر الماضي
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Patients
+              إجمالي المرضى
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{totalPatients}</div>
             <p className="text-xs text-muted-foreground">
-              All-time patient records
+              سجلات المرضى على الإطلاق
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Appointments</CardTitle>
+            <CardTitle className="text-sm font-medium">المواعيد الجديدة</CardTitle>
             <CalendarPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{newAppointments}</div>
-            <p className="text-xs text-muted-foreground">
-              +19% from last month
+            <p className="text-xs text-muted-foreground text-right">
+              +19% من الشهر الماضي
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Active Doctors
+              الأطباء النشطون
             </CardTitle>
             <Stethoscope className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{activeDoctors}</div>
             <p className="text-xs text-muted-foreground">
-              Available today
+              متاحون اليوم
             </p>
           </CardContent>
         </Card>
@@ -89,14 +89,15 @@ export function Overview() {
 
        <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Featured Doctors</CardTitle>
-            <CardDescription>Our top-rated and available doctors.</CardDescription>
+            <CardTitle>الأطباء المميزون</CardTitle>
+            <CardDescription>الأطباء الأعلى تقييماً والمتاحون.</CardDescription>
           </CardHeader>
           <CardContent>
             <Carousel
               opts={{
                 align: "start",
                 loop: true,
+                direction: "rtl",
               }}
               className="w-full"
             >
@@ -115,13 +116,13 @@ export function Overview() {
                             data-ai-hint="doctor portrait"
                           />
                           <div>
-                            <CardTitle className="text-lg">Dr. {doctor.name}</CardTitle>
+                            <CardTitle className="text-lg">د. {doctor.name}</CardTitle>
                             <CardDescription>{doctor.specialty}</CardDescription>
                           </div>
                         </CardHeader>
                         <CardFooter>
                            <p className="text-xs text-muted-foreground">
-                            Next Available: {doctor.nextAvailable}
+                            أقرب موعد: {doctor.nextAvailable}
                           </p>
                         </CardFooter>
                       </Card>
@@ -139,8 +140,8 @@ export function Overview() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>An overview of the latest activities in the system.</CardDescription>
+              <CardTitle>النشاط الأخير</CardTitle>
+              <CardDescription>نظرة عامة على أحدث الأنشطة في النظام.</CardDescription>
             </div>
             <Activity className="h-5 w-5 text-muted-foreground" />
           </div>

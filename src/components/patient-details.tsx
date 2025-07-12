@@ -68,8 +68,8 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "AI Error",
-        description: "Could not generate patient summary. Please try again.",
+        title: "خطأ بالذكاء الاصطناعي",
+        description: "لا يمكن إنشاء ملخص المريض. يرجى المحاولة مرة أخرى.",
       })
       console.error(error)
     } finally {
@@ -78,19 +78,15 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
   }
 
   useEffect(() => {
-    // Only generate summary if the dialog is open for a patient
-    // and a summary hasn't been generated for them yet in this session.
     if (isOpen && patient && !summary) {
         handleGenerateSummary();
     }
-     // Intentionally not adding `summary` to dependency array to cache result
   }, [isOpen, patient]);
 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       onOpenChange(open);
-      // If dialog is closing, clear the summary for next time
       if (!open) {
         setSummary(null);
         setIsLoadingSummary(false);
@@ -112,11 +108,11 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
         <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="md:col-span-2 space-y-6">
                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Patient Information</h3>
+                    <h3 className="text-lg font-semibold mb-3">معلومات المريض</h3>
                     <div className="space-y-3 text-sm">
                        <div className="flex items-center gap-3">
                             <Cake className="h-4 w-4 text-muted-foreground" />
-                            <span>{patient.dob} ({getAge(patient.dob)} years old)</span>
+                            <span>{patient.dob} (العمر {getAge(patient.dob)} سنة)</span>
                        </div>
                        <div className="flex items-center gap-3">
                             <VenetianMask className="h-4 w-4 text-muted-foreground" />
@@ -134,14 +130,14 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                 </div>
                  <div>
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">AI Summary</h3>
+                        <h3 className="text-lg font-semibold">ملخص بالذكاء الاصطناعي</h3>
                          <Button variant="ghost" size="sm" onClick={handleGenerateSummary} disabled={isLoadingSummary}>
                             {isLoadingSummary ? (
                                 <Loader2 className="animate-spin h-4 w-4" />
                             ) : (
                                 <Sparkles className="h-4 w-4" />
                             )}
-                            <span className="sr-only">Regenerate</span>
+                            <span className="sr-only">إعادة إنشاء</span>
                         </Button>
                     </div>
                      <div className="text-sm text-muted-foreground border rounded-md p-3 min-h-[120px] bg-muted/20">
@@ -153,20 +149,20 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             </div>
                         )}
                         {summary && <p>{summary}</p>}
-                        {!summary && !isLoadingSummary && <p>Click the sparkles to generate an AI-powered summary.</p>}
+                        {!summary && !isLoadingSummary && <p>انقر على أيقونة الذكاء الاصطناعي لإنشاء ملخص.</p>}
                      </div>
                 </div>
             </div>
             <div className="md:col-span-3 space-y-6">
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Appointment History</h3>
+                    <h3 className="text-lg font-semibold mb-2">سجل المواعيد</h3>
                     <div className="max-h-48 overflow-y-auto border rounded-md">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Doctor</TableHead>
-                            <TableHead>Date & Time</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead>الطبيب</TableHead>
+                            <TableHead>التاريخ والوقت</TableHead>
+                            <TableHead>الحالة</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -177,7 +173,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                 <div className="font-medium">{appointment.doctorName}</div>
                                 <div className="text-xs text-muted-foreground">{appointment.doctorSpecialty}</div>
                               </TableCell>
-                              <TableCell>{new Date(appointment.dateTime).toLocaleString()}</TableCell>
+                              <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG')}</TableCell>
                               <TableCell>
                                 <Badge variant={
                                   appointment.status === 'Completed' ? 'success' :
@@ -185,13 +181,18 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                   appointment.status === 'Waiting' ? 'waiting' :
                                   'followup'
                                 }>
-                                  {appointment.status}
+                                  {
+                                    appointment.status === 'Completed' ? 'مكتمل' :
+                                    appointment.status === 'Scheduled' ? 'مجدول' :
+                                    appointment.status === 'Waiting' ? 'في الانتظار' :
+                                    'عودة'
+                                  }
                                 </Badge>
                               </TableCell>
                             </TableRow>
                           ))) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">No appointments found.</TableCell>
+                                <TableCell colSpan={3} className="text-center h-24">لا توجد مواعيد.</TableCell>
                             </TableRow>
                           )}
                         </TableBody>
@@ -199,15 +200,15 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                     </div>
                 </div>
                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Billing History</h3>
+                    <h3 className="text-lg font-semibold mb-2">سجل الفواتير</h3>
                     <div className="max-h-48 overflow-y-auto border rounded-md">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Service</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead>الخدمة</TableHead>
+                            <TableHead>التاريخ</TableHead>
+                            <TableHead>المبلغ</TableHead>
+                            <TableHead>الحالة</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -215,19 +216,19 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             patientTransactions.map((transaction: Transaction) => (
                             <TableRow key={transaction.id}>
                                <TableCell>{transaction.service}</TableCell>
-                               <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                               <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
                                <TableCell>${transaction.amount.toFixed(2)}</TableCell>
                                <TableCell>
                                  <Badge variant={
                                    transaction.status === 'Success' ? 'success' : 'destructive'
                                  }>
-                                  {transaction.status}
+                                  {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
                                 </Badge>
                                </TableCell>
                             </TableRow>
                            ))) : (
                              <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">No transactions found.</TableCell>
+                                <TableCell colSpan={4} className="text-center h-24">لا توجد فواتير.</TableCell>
                             </TableRow>
                            )}
                         </TableBody>
