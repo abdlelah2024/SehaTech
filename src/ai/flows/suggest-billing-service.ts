@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Implements an AI flow to suggest a billing service based on recent appointments.
@@ -40,7 +39,7 @@ const prompt = ai.definePrompt({
   input: {schema: SuggestBillingServiceInputSchema},
   output: {schema: SuggestBillingServiceOutputSchema},
   prompt: `You are a medical billing assistant. Based on the patient's recent appointments, suggest a concise and appropriate billing service description.
-  The most recent, completed appointment is the most likely candidate for billing.
+  The most recent, completed appointment is the most likely candidate for billing. If there are multiple completed appointments, use the most recent one.
 
   Patient ID: {{{patientId}}}
 

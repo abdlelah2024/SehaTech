@@ -47,8 +47,8 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) =>
       patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
-      patient.email.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
-      patient.phone.includes(localSearchTerm)
+      (patient.email && patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())) ||
+      (patient.phone && patient.phone.includes(localSearchTerm))
     )
   }, [patients, localSearchTerm]);
 
@@ -136,3 +136,5 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
     </>
   )
 }
+
+    
