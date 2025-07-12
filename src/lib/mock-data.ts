@@ -1,5 +1,5 @@
 
-import type { Patient, Doctor, Appointment, RecentActivity, Transaction } from "./types";
+import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User } from "./types";
 import { getPatientInitials } from "./utils";
 
 const patientNames = [
@@ -188,4 +188,11 @@ export const mockTransactions: Transaction[] = [
   { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
   { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },
   { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'تخطيط قلب' },
+];
+
+export const mockUsers: User[] = [
+  { id: 'user-1', name: 'علي عبدالله', email: 'ali@example.com', role: 'admin' },
+  { id: 'user-2', name: 'سالم محمد', email: 'salem@example.com', role: 'receptionist' },
+  { id: 'user-3', name: 'د. إميلي كارتر', email: 'emily.carter@example.com', role: 'doctor' },
+  { id: 'user-4', name: 'د. بنيامين لي', email: 'ben.lee@example.com', role: 'doctor' },
 ];
