@@ -24,12 +24,14 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Sparkles, Loader2, Lightbulb } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { mockPatients, mockDoctors } from "@/lib/mock-data"
+import { mockPatients, mockDoctors, mockAppointments } from "@/lib/mock-data"
 import { useToast } from "@/hooks/use-toast"
+import { suggestOptimalAppointmentSlots, SuggestOptimalAppointmentSlotsInput, SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { Appointment, Patient, Doctor } from "@/lib/types"
 
 interface AppointmentSchedulerProps {
@@ -45,6 +47,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId)
+  const [isSuggestingSlots, setIsSuggestingSlots] = useState(false)
+  const [suggestedSlots, setSuggestedSlots] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>([])
   const { toast } = useToast()
 
   const [newPatientName, setNewPatientName] = useState("")
@@ -55,6 +59,56 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   useEffect(() => {
     setSelectedDoctorId(doctorId);
   }, [doctorId]);
+
+  const handleSuggestSlots = async () => {
+    if (!selectedPatientId || !selectedDoctorId) {
+      toast({
+        variant: "destructive",
+        title: "معلومات ناقصة",
+        description: "الرجاء اختيار المريض والطبيب أولاً.",
+      });
+      return;
+    }
+    
+    setIsSuggestingSlots(true);
+    setSuggestedSlots([]);
+    
+    try {
+      const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
+      if (!doctor) throw new Error("Doctor not found");
+
+      const input: SuggestOptimalAppointmentSlotsInput = {
+        patientId: selectedPatientId,
+        doctorId: selectedDoctorId,
+        appointmentHistory: mockAppointments
+          .filter(a => a.patientId === selectedPatientId && a.doctorId === selectedDoctorId)
+          .map(a => ({ date: format(new Date(a.dateTime), 'yyyy-MM-dd'), time: format(new Date(a.dateTime), 'HH:mm') })),
+        doctorAvailability: doctor.availability,
+      };
+
+      const result = await suggestOptimalAppointmentSlots(input);
+      setSuggestedSlots(result.suggestedSlots);
+
+    } catch (error) {
+      console.error("Error suggesting slots:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في الاقتراح",
+        description: "لم نتمكن من اقتراح مواعيد في الوقت الحالي.",
+      });
+    } finally {
+      setIsSuggestingSlots(false);
+    }
+  };
+
+  const applySuggestedSlot = (slot: { date: string, time: string }) => {
+    const [hours, minutes] = slot.time.split(':');
+    const newDate = new Date(slot.date);
+    newDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    setDate(newDate);
+    setSuggestedSlots([]); // Clear suggestions after applying one
+  };
+
 
   const handleConfirmAppointment = () => {
     if (!selectedPatientId || !selectedDoctorId || !date) {
@@ -137,6 +191,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
     setSelectedDoctorId(doctorId);
     setDate(new Date());
     setOpen(false);
+    setSuggestedSlots([]);
+    setIsSuggestingSlots(false);
   }
 
 
@@ -181,8 +237,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                         !newPatientDob && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
                       {newPatientDob ? format(newPatientDob, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
+                      <CalendarIcon className="mr-auto h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -204,7 +260,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="patient" className="text-right">
                 المريض
@@ -231,6 +287,40 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="flex justify-end">
+                <Button variant="outline" onClick={handleSuggestSlots} disabled={isSuggestingSlots || !selectedDoctorId || !selectedPatientId}>
+                    {isSuggestingSlots ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Sparkles className="ml-2 h-4 w-4" />}
+                    اقتراح موعد ذكي
+                </Button>
+            </div>
+            
+            {isSuggestingSlots && (
+              <div className="text-center text-muted-foreground text-sm">
+                جاري البحث عن أفضل المواعيد...
+              </div>
+            )}
+            
+            {suggestedSlots.length > 0 && (
+                <Alert>
+                  <Lightbulb className="h-4 w-4" />
+                  <AlertTitle>مواعيد مقترحة</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-2 mt-2">
+                    {suggestedSlots.map((slot, index) => (
+                      <div key={index} className="flex items-center justify-between gap-2 p-2 rounded-md border">
+                        <div>
+                            <p className="font-semibold">{format(new Date(slot.date), 'PPPP', {locale: ar})} - {slot.time}</p>
+                            <p className="text-xs text-muted-foreground">{slot.reason}</p>
+                        </div>
+                        <Button size="sm" onClick={() => applySuggestedSlot(slot)}>اختيار</Button>
+                      </div>
+                    ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+            )}
+
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">
@@ -245,8 +335,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                       !date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPPPp", { locale: ar }) : <span>اختر تاريخاً ووقتاً</span>}
+                     <CalendarIcon className="mr-auto h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -258,7 +348,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                     locale={ar}
                   />
                   <div className="p-2 border-t">
-                    <Input type="time" defaultValue={format(date || new Date(), "HH:mm")} onChange={(e) => {
+                    <Input type="time" dir="ltr" className="text-center" defaultValue={format(date || new Date(), "HH:mm")} onChange={(e) => {
                        const newDate = new Date(date || new Date());
                        const [hours, minutes] = e.target.value.split(':');
                        newDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));

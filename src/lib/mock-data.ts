@@ -17,6 +17,12 @@ export const mockPatients: Patient[] = patientNames.map((name, index) => ({
   avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(name)}`
 }));
 
+// Function to get a future date string
+const getFutureDate = (daysToAdd: number): string => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysToAdd);
+    return date.toISOString().split('T')[0];
+};
 
 export const mockDoctors: Doctor[] = [
   {
@@ -27,8 +33,9 @@ export const mockDoctors: Doctor[] = [
     nextAvailable: 'غداً، 10:00 ص',
     isAvailableToday: true,
     availability: [
-      { date: '2024-08-01', slots: ['10:00', '10:30', '14:00', '14:30'] },
-      { date: '2024-08-02', slots: ['09:00', '09:30', '11:00'] },
+      { date: getFutureDate(1), slots: ['10:00', '10:30', '14:00', '14:30'] },
+      { date: getFutureDate(2), slots: ['09:00', '09:30', '11:00'] },
+      { date: getFutureDate(4), slots: ['10:00', '10:30', '14:00', '14:30'] },
     ],
     servicePrice: 7500,
     freeReturnDays: 14,
@@ -42,8 +49,9 @@ export const mockDoctors: Doctor[] = [
     nextAvailable: 'اليوم، 2:00 م',
     isAvailableToday: true,
     availability: [
-       { date: '2024-08-01', slots: ['14:00', '14:30', '15:00', '15:30'] },
-       { date: '2024-08-03', slots: ['10:00', '10:30'] },
+       { date: getFutureDate(0), slots: ['14:00', '14:30', '15:00', '15:30'] },
+       { date: getFutureDate(3), slots: ['10:00', '10:30'] },
+       { date: getFutureDate(5), slots: ['14:00', '14:30', '15:00', '15:30'] },
     ],
     servicePrice: 6000,
     freeReturnDays: 10,
@@ -57,7 +65,8 @@ export const mockDoctors: Doctor[] = [
     nextAvailable: 'الاثنين القادم، 9:00 ص',
     isAvailableToday: false,
     availability: [
-       { date: '2024-08-05', slots: ['09:00', '09:30', '10:00'] },
+       { date: getFutureDate(5), slots: ['09:00', '09:30', '10:00'] },
+       { date: getFutureDate(7), slots: ['09:00', '09:30', '10:00'] },
     ],
     servicePrice: 5000,
     freeReturnDays: 7,
@@ -71,8 +80,9 @@ export const mockDoctors: Doctor[] = [
     nextAvailable: 'اليوم، 11:30 ص',
     isAvailableToday: true,
     availability: [
-      { date: '2024-08-01', slots: ['11:30', '12:00', '16:00'] },
-      { date: '2024-08-02', slots: ['14:00', '14:30'] },
+      { date: getFutureDate(0), slots: ['11:30', '12:00', '16:00'] },
+      { date: getFutureDate(1), slots: ['14:00', '14:30'] },
+      { date: getFutureDate(3), slots: ['11:30', '12:00', '16:00'] },
     ],
     servicePrice: 9000,
     freeReturnDays: 21,
@@ -151,6 +161,27 @@ export const mockAppointments: Appointment[] = [
     doctorName: `د. ${mockDoctors[3].name}`,
     doctorSpecialty: mockDoctors[3].specialty,
     dateTime: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Completed',
+  },
+   // Add past appointments for patient 1 with doctor 1 to test suggestions
+  {
+    id: 'appt-8',
+    patientId: 'patient-1',
+    patientName: mockPatients[0].name,
+    doctorId: 'doctor-1',
+    doctorName: `د. ${mockDoctors[0].name}`,
+    doctorSpecialty: mockDoctors[0].specialty,
+    dateTime: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+    status: 'Completed',
+  },
+  {
+    id: 'appt-9',
+    patientId: 'patient-1',
+    patientName: mockPatients[0].name,
+    doctorId: 'doctor-1',
+    doctorName: `د. ${mockDoctors[0].name}`,
+    doctorSpecialty: mockDoctors[0].specialty,
+    dateTime: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
     status: 'Completed',
   },
 ];
