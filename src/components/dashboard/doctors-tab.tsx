@@ -22,8 +22,21 @@ import {
 import { mockDoctors } from "@/lib/mock-data"
 import Image from "next/image"
 import { AppointmentScheduler } from "../appointment-scheduler"
-import { X, Calendar, DollarSign, Repeat } from "lucide-react"
+import { X, Calendar, DollarSign, Repeat, Edit, Trash2 } from "lucide-react"
 import { AddDoctorDialog } from "./add-doctor-dialog"
+import { EditDoctorDialog } from "./edit-doctor-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
 
 interface DoctorsTabProps {
@@ -34,6 +47,8 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
   const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors);
+  const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     setLocalSearchTerm(globalSearchTerm);
@@ -60,6 +75,19 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
   
   const handleDoctorCreated = (newDoctor: Doctor) => {
     setDoctors(prev => [newDoctor, ...prev]);
+  };
+
+  const handleDoctorUpdated = (updatedDoctor: Doctor) => {
+    setDoctors(prev => prev.map(d => d.id === updatedDoctor.id ? updatedDoctor : d));
+    setDoctorToEdit(null);
+  };
+  
+  const handleDoctorDeleted = (doctorId: string) => {
+     setDoctors(prev => prev.filter(d => d.id !== doctorId));
+     toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف ملف الطبيب من النظام.",
+     });
   };
 
   const showClearButton = localSearchTerm || selectedSpecialty !== "all"
@@ -100,19 +128,47 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
         {filteredDoctors.map((doctor) => (
           <Card key={doctor.id} className="flex flex-col">
             <CardHeader>
-              <div className="flex items-center gap-4">
-                <Image
-                  src={doctor.image}
-                  alt={`Dr. ${doctor.name}`}
-                  width={60}
-                  height={60}
-                  className="rounded-full"
-                  data-ai-hint="doctor portrait"
-                />
-                <div>
-                  <CardTitle>د. {doctor.name}</CardTitle>
-                  <CardDescription>{doctor.specialty}</CardDescription>
-                </div>
+              <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <Image
+                      src={doctor.image}
+                      alt={`Dr. ${doctor.name}`}
+                      width={60}
+                      height={60}
+                      className="rounded-full"
+                      data-ai-hint="doctor portrait"
+                    />
+                    <div>
+                      <CardTitle>د. {doctor.name}</CardTitle>
+                      <CardDescription>{doctor.specialty}</CardDescription>
+                    </div>
+                  </div>
+                   <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDoctorToEdit(doctor)}>
+                          <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف ملف الطبيب بشكل دائم من خوادمنا.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDoctorDeleted(doctor.id)} className="bg-destructive hover:bg-destructive/90">
+                              نعم، قم بالحذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
               </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-2 text-sm text-muted-foreground">
@@ -143,6 +199,15 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
             </div>
         )}
       </div>
+
+       {doctorToEdit && (
+        <EditDoctorDialog
+          isOpen={!!doctorToEdit}
+          onClose={() => setDoctorToEdit(null)}
+          doctor={doctorToEdit}
+          onDoctorUpdated={handleDoctorUpdated}
+        />
+      )}
     </div>
   )
 }
