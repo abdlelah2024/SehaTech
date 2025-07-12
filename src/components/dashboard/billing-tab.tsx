@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { mockTransactions, mockPatients, mockAppointments } from "@/lib/mock-data"
-import type { Transaction, Appointment } from "@/lib/types";
+import type { Transaction } from "@/lib/types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -35,14 +35,15 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
 import { suggestBillingService, SuggestBillingServiceInput } from "@/ai/flows/suggest-billing-service";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Search } from "lucide-react";
 
 interface BillingTabProps {
-  searchTerm: string;
+  // searchTerm removed as it's handled locally
 }
 
-export function BillingTab({ searchTerm }: BillingTabProps) {
+export function BillingTab({ }: BillingTabProps) {
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
   const [amount, setAmount] = useState("");
@@ -147,12 +148,13 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
 
   return (
     <Card>
-       <CardHeader className="flex flex-row items-center justify-between">
+       <CardHeader>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <CardTitle>الفواتير</CardTitle>
             <CardDescription>عرض وإدارة جميع المعاملات المالية.</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>تسجيل فاتورة</Button>
             </DialogTrigger>
@@ -181,7 +183,7 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                   <Label htmlFor="service" className="text-right">الخدمة</Label>
                   <div className="col-span-3 flex items-center gap-2">
                      <Input id="service" placeholder="مثال: فحص عام" className="flex-grow" value={service} onChange={(e) => setService(e.target.value)} />
-                      <Button variant="outline" size="icon" onClick={handleSuggestService} disabled={isSuggesting}>
+                      <Button variant="outline" size="icon" onClick={handleSuggestService} disabled={isSuggesting || !selectedPatientId}>
                         {isSuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                         <span className="sr-only">اقتراح خدمة</span>
                       </Button>
@@ -193,50 +195,63 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 </div>
               </div>
               <DialogFooter>
+                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
                  <Button onClick={handleRecordTransaction}>حفظ الفاتورة</Button>
-                 <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </div>
+         <div className="mt-4 relative w-full sm:max-w-xs">
+            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="ابحث باسم المريض أو رقم الفاتورة..."
+              className="w-full appearance-none bg-background pr-8 shadow-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">المبلغ</TableHead>
-              <TableHead className="text-right">التاريخ</TableHead>
-              <TableHead className="text-right">الخدمة</TableHead>
-              <TableHead className="text-right">المريض</TableHead>
-              <TableHead className="w-[100px] text-right">رقم الفاتورة</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>
-                   <Badge variant={
-                     transaction.status === 'Success' ? 'success' : 'destructive'
-                   }>
-                    {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
-                  </Badge>
-                </TableCell>
-                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
-                <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
-                <TableCell>{transaction.service}</TableCell>
-                <TableCell>{transaction.patientName}</TableCell>
-                <TableCell className="font-mono text-xs text-right" dir="ltr">{transaction.id}</TableCell>
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px] text-right">رقم الفاتورة</TableHead>
+                <TableHead className="text-right">المريض</TableHead>
+                <TableHead className="text-right">الخدمة</TableHead>
+                <TableHead className="text-right">التاريخ</TableHead>
+                <TableHead className="text-right">المبلغ</TableHead>
+                <TableHead className="text-right">الحالة</TableHead>
               </TableRow>
-            ))}
-             {filteredTransactions.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                        لا توجد فواتير تطابق معايير البحث.
-                    </TableCell>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell className="font-mono text-xs" dir="ltr">{transaction.id}</TableCell>
+                  <TableCell>{transaction.patientName}</TableCell>
+                  <TableCell>{transaction.service}</TableCell>
+                  <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
+                  <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
+                  <TableCell>
+                     <Badge variant={
+                       transaction.status === 'Success' ? 'success' : 'destructive'
+                     }>
+                      {transaction.status === 'Success' ? 'ناجحة' : 'فاشلة'}
+                    </Badge>
+                  </TableCell>
                 </TableRow>
-              )}
-          </TableBody>
-        </Table>
+              ))}
+               {filteredTransactions.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                          لا توجد فواتير تطابق معايير البحث.
+                      </TableCell>
+                  </TableRow>
+                )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

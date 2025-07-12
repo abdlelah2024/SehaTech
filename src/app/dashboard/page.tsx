@@ -47,7 +47,6 @@ export default function Dashboard() {
   const initialTab = searchParams.get('tab') as TabValue || 'dashboard';
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
-  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   useEffect(() => {
@@ -77,7 +76,8 @@ export default function Dashboard() {
 
   const renderNavLinks = (isMobile: boolean = false) => (
     <nav className={cn(
-      isMobile ? "grid gap-2 text-lg font-medium" : "grid items-start pr-2 text-sm font-medium lg:pr-4"
+      "grid items-start px-2 text-sm font-medium lg:px-4",
+      isMobile ? "grid gap-2 text-lg font-medium" : "grid items-start text-sm font-medium"
     )}>
       {isMobile && (
         <Link
@@ -106,7 +106,7 @@ export default function Dashboard() {
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
           {link.badge && (
-             <Badge className="mr-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+             <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
           )}
@@ -117,24 +117,7 @@ export default function Dashboard() {
 
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-       <div className="hidden border-l bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Stethoscope className="h-6 w-6 text-primary" />
-              <span className="">صحة تك</span>
-            </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
-      </div>
+    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -156,18 +139,7 @@ export default function Dashboard() {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-             <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="بحث..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                  value={globalSearchTerm}
-                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                />
-              </div>
-            </form>
+             {/* Global Search Bar Removed */}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -188,7 +160,7 @@ export default function Dashboard() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">
+            <h1 className="text-lg font-semibold md:text-2xl capitalize">
               {navLinks.find(l => l.id === activeTab)?.label || activeTab}
             </h1>
           </div>
@@ -197,25 +169,42 @@ export default function Dashboard() {
               <Overview />
             </TabsContent>
             <TabsContent value="appointments">
-              <AppointmentsTab searchTerm={globalSearchTerm} />
+              <AppointmentsTab />
             </TabsContent>
             <TabsContent value="doctors">
-              <DoctorsTab searchTerm={globalSearchTerm} />
+              <DoctorsTab />
             </TabsContent>
             <TabsContent value="patients">
-              <PatientsTab searchTerm={globalSearchTerm} />
+              <PatientsTab />
             </TabsContent>
             <TabsContent value="billing">
-              <BillingTab searchTerm={globalSearchTerm} />
+              <BillingTab />
             </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab />
             </TabsContent>
             <TabsContent value="users">
-              <UsersTab searchTerm={globalSearchTerm} />
+              <UsersTab />
             </TabsContent>
           </Tabs>
         </main>
+      </div>
+       <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <Stethoscope className="h-6 w-6 text-primary" />
+              <span className="">صحة تك</span>
+            </Link>
+            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -25,14 +25,14 @@ import {
 } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, X } from "lucide-react"
+import { CalendarIcon, X, Search } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isSameDay } from "date-fns"
 import { ar } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
 interface AppointmentsTabProps {
-  searchTerm: string;
+  // searchTerm removed as it's now handled locally
 }
 
 const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
@@ -43,8 +43,9 @@ const statusTranslations: { [key: string]: string } = {
   'Follow-up': 'إعادة'
 };
 
-export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
+export function AppointmentsTab({ }: AppointmentsTabProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
@@ -60,6 +61,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
   };
   
   const handleClearFilters = () => {
+    setSearchTerm("");
     setFilterDate(undefined);
     setFilterStatus("all");
     setFilterDoctor("all");
@@ -78,25 +80,35 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
   return (
     <Card>
        <CardHeader>
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
                 <CardTitle>المواعيد</CardTitle>
                 <CardDescription>إدارة وعرض جميع مواعيد المرضى.</CardDescription>
             </div>
             <AppointmentScheduler onAppointmentCreated={handleAppointmentCreated} />
           </div>
-          <div className="flex items-center gap-2 pt-4">
+          <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
+              <div className="relative w-full sm:w-auto flex-grow">
+                 <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                 <Input
+                  type="search"
+                  placeholder="ابحث عن مريض أو طبيب..."
+                  className="w-full appearance-none bg-background pr-8 shadow-none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-[240px] justify-start text-right font-normal",
+                      "w-full sm:w-[240px] justify-start text-right font-normal",
                       !filterDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
+                     {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
+                     <CalendarIcon className="mr-auto h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -111,7 +123,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
               </Popover>
 
                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="تصفية حسب الحالة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -123,7 +135,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
               </Select>
 
                <Select value={filterDoctor} onValueChange={setFilterDoctor}>
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full sm:w-[220px]">
                   <SelectValue placeholder="تصفية حسب الطبيب" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,52 +146,54 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                 </SelectContent>
               </Select>
               
-              {(filterDate || filterStatus !== 'all' || filterDoctor !== 'all') && (
+              {(searchTerm || filterDate || filterStatus !== 'all' || filterDoctor !== 'all') && (
                 <Button variant="ghost" onClick={handleClearFilters}>
-                  <X className="ml-2 h-4 w-4" />
                   مسح الفلاتر
+                  <X className="mr-2 h-4 w-4" />
                 </Button>
               )}
           </div>
         </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">التاريخ والوقت</TableHead>
-              <TableHead className="text-right">التخصص</TableHead>
-              <TableHead className="text-right">الطبيب</TableHead>
-              <TableHead className="text-right">المريض</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAppointments.length > 0 ? filteredAppointments.map((appointment) => (
-              <TableRow key={appointment.id}>
-                <TableCell>
-                   <Badge variant={
-                     appointment.status === 'Completed' ? 'success' :
-                     appointment.status === 'Scheduled' ? 'secondary' :
-                     appointment.status === 'Waiting' ? 'waiting' :
-                     'followup'
-                   }>
-                    {statusTranslations[appointment.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
-                <TableCell>{appointment.doctorSpecialty}</TableCell>
-                <TableCell>{appointment.doctorName}</TableCell>
-                <TableCell>{appointment.patientName}</TableCell>
-              </TableRow>
-            )) : (
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  لا توجد مواعيد تطابق معايير البحث.
-                </TableCell>
+                <TableHead className="text-right">المريض</TableHead>
+                <TableHead className="text-right">الطبيب</TableHead>
+                <TableHead className="text-right">التخصص</TableHead>
+                <TableHead className="text-right">التاريخ والوقت</TableHead>
+                <TableHead className="text-right">الحالة</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredAppointments.length > 0 ? filteredAppointments.map((appointment) => (
+                <TableRow key={appointment.id}>
+                   <TableCell>{appointment.patientName}</TableCell>
+                   <TableCell>{appointment.doctorName}</TableCell>
+                  <TableCell>{appointment.doctorSpecialty}</TableCell>
+                  <TableCell>{new Date(appointment.dateTime).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
+                  <TableCell>
+                     <Badge variant={
+                       appointment.status === 'Completed' ? 'success' :
+                       appointment.status === 'Scheduled' ? 'secondary' :
+                       appointment.status === 'Waiting' ? 'waiting' :
+                       'followup'
+                     }>
+                      {statusTranslations[appointment.status]}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    لا توجد مواعيد تطابق معايير البحث.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   )
