@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -35,18 +35,21 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>(mockPatients)
 
-  useEffect(() => {
-    setLocalSearchTerm(globalSearchTerm);
-  }, [globalSearchTerm]);
+  // We are not using globalSearchTerm for now to provide a dedicated search experience
+  // useEffect(() => {
+  //   setLocalSearchTerm(globalSearchTerm);
+  // }, [globalSearchTerm]);
 
   const handlePatientCreated = (newPatient: Patient) => {
     setPatients(prevPatients => [newPatient, ...prevPatients]);
   };
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
-    patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())
-  )
+  const filteredPatients = useMemo(() => {
+    return patients.filter((patient) =>
+      patient.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
+      patient.email.toLowerCase().includes(localSearchTerm.toLowerCase())
+    )
+  }, [patients, localSearchTerm]);
 
   const getPatientAppointmentCount = (patientId: string) => {
     return mockAppointments.filter(
@@ -103,6 +106,13 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                   </TableCell>
                 </TableRow>
               ))}
+               {filteredPatients.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                        لا يوجد مرضى يطابقون معايير البحث.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

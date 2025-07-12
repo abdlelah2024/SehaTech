@@ -34,9 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles } from "lucide-react";
-import { suggestServiceAction } from "@/lib/actions";
-
 
 interface BillingTabProps {
   searchTerm: string;
@@ -49,8 +46,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [amount, setAmount] = useState("");
   const [service, setService] = useState("");
   const { toast } = useToast();
-  const [isSuggesting, setIsSuggesting] = useState(false);
-
 
   const handleRecordTransaction = () => {
     if (!selectedPatientId || !amount || !service) {
@@ -87,32 +82,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     setAmount("");
     setService("");
   }
-
-
-  const handleSuggestService = async () => {
-    if (!selectedPatientId) return;
-    setIsSuggesting(true);
-    try {
-      const result = await suggestServiceAction({ patientId: selectedPatientId });
-      if (result.service) {
-        setService(result.service);
-      } else {
-        toast({
-          title: "لا يوجد اقتراح",
-          description: "تعذر اقتراح خدمة لهذا المريض.",
-        })
-      }
-    } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "خطأ بالذكاء الاصطناعي",
-        description: "تعذر الحصول على الاقتراح. يرجى المحاولة مرة أخرى.",
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
-
 
   const filteredTransactions = useMemo(() => {
     if (!searchTerm) return transactions;
@@ -164,18 +133,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="service" className="text-right">الخدمة</Label>
                   <Input id="service" placeholder="مثال: فحص عام" className="col-span-3" value={service} onChange={(e) => setService(e.target.value)} />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="col-start-2 col-span-3">
-                    <Button variant="ghost" onClick={handleSuggestService} disabled={!selectedPatientId || isSuggesting} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
-                      {isSuggesting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      اقتراح الخدمة بالذكاء الاصطناعي
-                    </Button>
-                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="amount" className="text-right">المبلغ ($)</Label>

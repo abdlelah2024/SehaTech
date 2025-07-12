@@ -1,7 +1,6 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -23,11 +22,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { mockAppointments, mockTransactions } from "@/lib/mock-data"
 import type { Patient, Appointment, Transaction } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
-import { Cake, VenetianMask, Phone, Home, Sparkles, Loader2 } from "lucide-react"
+import { Cake, VenetianMask, Phone, Home } from "lucide-react"
 import { Button } from "./ui/button"
-import { getPatientSummaryAction } from "@/lib/actions"
-import { useToast } from "@/hooks/use-toast"
-import { Skeleton } from "./ui/skeleton"
 
 interface PatientDetailsProps {
   patient: Patient
@@ -36,9 +32,6 @@ interface PatientDetailsProps {
 }
 
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
-  const [summary, setSummary] = useState<string | null>(null)
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false)
-  const { toast } = useToast()
 
   const patientAppointments = mockAppointments.filter(
     (appointment) => appointment.patientId === patient.id
@@ -58,39 +51,6 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     }
     return age;
   }
-
-  const handleGenerateSummary = async () => {
-    setIsLoadingSummary(true)
-    setSummary(null)
-    try {
-      const result = await getPatientSummaryAction(patient)
-      setSummary(result)
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "خطأ بالذكاء الاصطناعي",
-        description: "لا يمكن إنشاء ملخص المريض. يرجى المحاولة مرة أخرى.",
-      })
-      console.error(error)
-    } finally {
-      setIsLoadingSummary(false)
-    }
-  }
-  
-  useEffect(() => {
-    // Reset state when dialog closes or patient changes
-    if (!isOpen) {
-      setSummary(null);
-      setIsLoadingSummary(false);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && patient) {
-        handleGenerateSummary();
-    }
-  }, [isOpen, patient]);
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -129,30 +89,6 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             <span>{patient.address}</span>
                        </div>
                     </div>
-                </div>
-                 <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">ملخص بالذكاء الاصطناعي</h3>
-                         <Button variant="ghost" size="icon" onClick={handleGenerateSummary} disabled={isLoadingSummary} className="h-8 w-8">
-                            {isLoadingSummary ? (
-                                <Loader2 className="animate-spin h-4 w-4" />
-                            ) : (
-                                <Sparkles className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">إعادة إنشاء</span>
-                        </Button>
-                    </div>
-                     <div className="text-sm text-muted-foreground border rounded-md p-3 min-h-[120px] bg-muted/20">
-                        {isLoadingSummary && (
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-[90%]" />
-                                <Skeleton className="h-4 w-[80%]" />
-                                <Skeleton className="h-4 w-[85%]" />
-                            </div>
-                        )}
-                        {summary && <p>{summary}</p>}
-                        {!summary && !isLoadingSummary && <p>انقر على أيقونة الذكاء الاصطناعي لإنشاء ملخص.</p>}
-                     </div>
                 </div>
             </div>
             <div className="md:col-span-3 space-y-6">

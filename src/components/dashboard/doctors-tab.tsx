@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -31,22 +31,24 @@ interface DoctorsTabProps {
 export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const specialties = [...new Set(mockDoctors.map((d) => d.specialty))]
-
+  
   useEffect(() => {
     setLocalSearchTerm(globalSearchTerm);
   }, [globalSearchTerm]);
 
+  const specialties = useMemo(() => [...new Set(mockDoctors.map((d) => d.specialty))], []);
 
-  const filteredDoctors = mockDoctors.filter((doctor) => {
-    const matchesSearch = doctor.name
-      .toLowerCase()
-      .includes(localSearchTerm.toLowerCase())
-    const matchesSpecialty = selectedSpecialty !== "all"
-      ? doctor.specialty === selectedSpecialty
-      : true
-    return matchesSearch && matchesSpecialty
-  })
+  const filteredDoctors = useMemo(() => {
+    return mockDoctors.filter((doctor) => {
+      const matchesSearch = doctor.name
+        .toLowerCase()
+        .includes(localSearchTerm.toLowerCase())
+      const matchesSpecialty = selectedSpecialty !== "all"
+        ? doctor.specialty === selectedSpecialty
+        : true
+      return matchesSearch && matchesSpecialty
+    })
+  }, [localSearchTerm, selectedSpecialty]);
 
   const handleClearFilters = () => {
     setLocalSearchTerm("")
@@ -117,6 +119,11 @@ export function DoctorsTab({ searchTerm: globalSearchTerm }: DoctorsTabProps) {
             </CardFooter>
           </Card>
         ))}
+        {filteredDoctors.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground py-10">
+                لا يوجد أطباء يطابقون معايير البحث.
+            </div>
+        )}
       </div>
     </div>
   )

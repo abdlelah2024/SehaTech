@@ -24,13 +24,11 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Loader2, Sparkles } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import { mockPatients, mockDoctors } from "@/lib/mock-data"
-import { suggestSlotsAction } from "@/lib/actions"
-import type { SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
 import { useToast } from "@/hooks/use-toast"
 import type { Appointment, Patient } from "@/lib/types"
 
@@ -47,8 +45,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId)
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
-  const [suggestions, setSuggestions] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>()
   const { toast } = useToast()
 
   const [newPatientName, setNewPatientName] = useState("")
@@ -56,47 +52,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientAddress, setNewPatientAddress] = useState("")
-
-
-  const handleGetSuggestions = async () => {
-    if (!selectedDoctorId) {
-       toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "الرجاء اختيار طبيب أولاً.",
-      })
-      return;
-    }
-    setIsLoadingSuggestions(true)
-    setSuggestions(undefined);
-    try {
-      const result = await suggestSlotsAction({ doctorId: selectedDoctorId, patientId: selectedPatientId || 'patient-1' });
-      if (result.suggestedSlots.length > 0) {
-        setSuggestions(result.suggestedSlots);
-      } else {
-        toast({
-          title: "لا توجد اقتراحات",
-          description: "لا يمكن اقتراح أوقات مثلى في هذا الوقت.",
-        })
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "خطأ بالذكاء الاصطناعي",
-        description: "لا يمكن الحصول على الاقتراحات. يرجى المحاولة مرة أخرى.",
-      })
-      console.error(error);
-    } finally {
-      setIsLoadingSuggestions(false)
-    }
-  }
-
-  const handleSuggestionClick = (slot: { date: string, time: string }) => {
-    const [year, month, day] = slot.date.split('-').map(Number);
-    const [hours, minutes] = slot.time.split(':').map(Number);
-    setDate(new Date(year, month - 1, day, hours, minutes));
-    setSuggestions(undefined);
-  }
 
   const handleConfirmAppointment = () => {
     if (!selectedPatientId || !selectedDoctorId || !date) {
@@ -300,33 +255,6 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <div className="col-start-2 col-span-3">
-                <Button variant="ghost" onClick={handleGetSuggestions} disabled={isLoadingSuggestions || !selectedDoctorId || !selectedPatientId} className="w-full justify-start gap-2 text-primary hover:text-primary disabled:text-muted-foreground disabled:no-underline">
-                  {isLoadingSuggestions ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  اقتراح موعد مثالي بالذكاء الاصطناعي
-                </Button>
-              </div>
-            </div>
-            {suggestions && (
-              <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right pt-2">الاقتراحات</Label>
-                  <div className="col-span-3 space-y-2">
-                      {suggestions.map((slot, index) => (
-                          <div key={index} className="p-2 border rounded-md">
-                              <Button variant="link" className="p-0 h-auto" onClick={() => handleSuggestionClick(slot)}>
-                                  {format(new Date(slot.date), 'EEE، d MMM', { locale: ar })} الساعة {slot.time}
-                              </Button>
-                              <p className="text-xs text-muted-foreground mt-1">{slot.reason}</p>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-            )}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="notes" className="text-right pt-2">
                 ملاحظات
