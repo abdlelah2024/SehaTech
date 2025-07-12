@@ -34,7 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { suggestBillingService } from "@/ai/flows/suggest-billing-service";
 
 interface BillingTabProps {
   searchTerm: string;
@@ -48,6 +49,57 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
   const [service, setService] = useState("");
   const { toast } = useToast();
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+
+  const handleSuggestService = async () => {
+    if (!selectedPatientId) {
+       toast({
+        variant: "destructive",
+        title: "لم يتم تحديد مريض",
+        description: "الرجاء اختيار مريض أولاً لاقتراح خدمة.",
+      });
+      return;
+    }
+    setIsLoadingSuggestion(true);
+    try {
+      const recentAppointments = mockAppointments.filter(
+        (a) => a.patientId === selectedPatientId
+      );
+
+      if (recentAppointments.length === 0) {
+        toast({
+          title: "لا يوجد تاريخ للمريض",
+          description: "لا يمكن اقتراح خدمة لعدم وجود مواعيد سابقة.",
+        });
+        return;
+      }
+      
+      const result = await suggestBillingService({
+        patientId: selectedPatientId,
+        recentAppointments: recentAppointments.map(a => ({
+            doctorSpecialty: a.doctorSpecialty,
+            dateTime: a.dateTime,
+            status: a.status
+        }))
+      });
+
+      if (result && result.service) {
+        setService(result.service);
+        toast({
+          title: "تم اقتراح الخدمة بنجاح!",
+        });
+      }
+
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "خطأ في الاقتراح",
+        description: "حدث خطأ أثناء محاولة اقتراح الخدمة.",
+      });
+      console.error("Error suggesting service:", error);
+    } finally {
+        setIsLoadingSuggestion(false);
+    }
+  };
 
 
   const handleRecordTransaction = () => {
@@ -81,9 +133,6 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
     });
 
     setIsDialogOpen(false);
-    setSelectedPatientId(undefined);
-    setAmount("");
-    setService("");
   }
 
   const filteredTransactions = useMemo(() => {
@@ -142,7 +191,13 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="service" className="text-right">الخدمة</Label>
-                  <Input id="service" placeholder="مثال: فحص عام" className="col-span-3" value={service} onChange={(e) => setService(e.target.value)} />
+                  <div className="col-span-3 flex items-center gap-2">
+                     <Input id="service" placeholder="مثال: فحص عام" className="flex-grow" value={service} onChange={(e) => setService(e.target.value)} />
+                      <Button variant="outline" size="icon" onClick={handleSuggestService} disabled={isLoadingSuggestion || !selectedPatientId}>
+                          {isLoadingSuggestion ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                          <span className="sr-only">Suggest Service</span>
+                      </Button>
+                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="amount" className="text-right">المبلغ ($)</Label>
