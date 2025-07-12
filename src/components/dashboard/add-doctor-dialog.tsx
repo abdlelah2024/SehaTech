@@ -98,7 +98,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
             أدخل بيانات الطبيب الجديد. سيتمكن من تسجيل الدخول لاحقاً.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               الاسم
@@ -129,7 +129,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
             </Label>
             <div className="col-span-3 grid grid-cols-2 gap-2">
               {weekDays.map(day => (
-                <div key={day.id} className="flex items-center space-x-2 space-x-reverse justify-end">
+                <div key={day.id} className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
                     id={day.id}
                     checked={availableDays.includes(day.id)}

@@ -203,12 +203,12 @@ export function BillingTab({ searchTerm }: BillingTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>رقم الفاتورة</TableHead>
-              <TableHead>المريض</TableHead>
-              <TableHead>الخدمة</TableHead>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>المبلغ</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead className="text-right">رقم الفاتورة</TableHead>
+              <TableHead className="text-right">المريض</TableHead>
+              <TableHead className="text-right">الخدمة</TableHead>
+              <TableHead className="text-right">التاريخ</TableHead>
+              <TableHead className="text-right">المبلغ</TableHead>
+              <TableHead className="text-right">الحالة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -161,7 +161,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
         </DialogHeader>
 
         {isNewPatientFlow ? (
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">الاسم الكامل</Label>
               <Input id="name" placeholder="مثال: أحمد علي" className="col-span-3" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} />
@@ -181,7 +181,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                         !newPatientDob && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="ml-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4" />
                       {newPatientDob ? format(newPatientDob, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
                     </Button>
                   </PopoverTrigger>
@@ -204,7 +204,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="patient" className="text-right">
                 المريض
@@ -245,7 +245,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
                       !date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPPPp", { locale: ar }) : <span>اختر تاريخاً ووقتاً</span>}
                   </Button>
                 </PopoverTrigger>

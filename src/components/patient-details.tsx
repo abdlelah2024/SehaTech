@@ -107,7 +107,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
             </div>
           </div>
         </DialogHeader>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[70vh] overflow-y-auto pl-2">
             <div className="md:col-span-2 space-y-6">
                  <div>
                     <h3 className="text-lg font-semibold mb-3">معلومات المريض</h3>
@@ -156,9 +156,9 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>الطبيب</TableHead>
-                            <TableHead>التاريخ والوقت</TableHead>
-                            <TableHead>الحالة</TableHead>
+                            <TableHead className="text-right">الطبيب</TableHead>
+                            <TableHead className="text-right">التاريخ والوقت</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -201,10 +201,10 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>الخدمة</TableHead>
-                            <TableHead>التاريخ</TableHead>
-                            <TableHead>المبلغ</TableHead>
-                            <TableHead>الحالة</TableHead>
+                            <TableHead className="text-right">الخدمة</TableHead>
+                            <TableHead className="text-right">التاريخ</TableHead>
+                            <TableHead className="text-right">المبلغ</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>

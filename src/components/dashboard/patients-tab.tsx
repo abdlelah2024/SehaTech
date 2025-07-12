@@ -82,10 +82,10 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>المريض</TableHead>
-                  <TableHead>رقم الهاتف</TableHead>
-                  <TableHead className="hidden sm:table-cell">إجمالي المواعيد</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                  <TableHead className="text-right">المريض</TableHead>
+                  <TableHead className="text-right">رقم الهاتف</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
+                  <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,7 +102,7 @@ export function PatientsTab({ searchTerm: globalSearchTerm }: PatientsTabProps) 
                     </TableCell>
                     <TableCell>{patient.phone}</TableCell>
                     <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
-                    <TableCell className="text-left">
+                    <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); }}>عرض الملف</Button>
                     </TableCell>
                   </TableRow>

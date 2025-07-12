@@ -98,7 +98,7 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
             قم بتحديث بيانات الطبيب أدناه.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pl-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               الاسم
@@ -129,7 +129,7 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
             </Label>
             <div className="col-span-3 grid grid-cols-2 gap-2">
               {weekDays.map(day => (
-                <div key={day.id} className="flex items-center space-x-reverse space-x-2 justify-end">
+                <div key={day.id} className="flex items-center space-x-reverse space-x-2">
                    <Checkbox
                     id={`edit-${day.id}`}
                     checked={availableDays.includes(day.id)}

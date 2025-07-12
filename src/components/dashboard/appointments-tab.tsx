@@ -95,7 +95,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
                       !filterDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
                   </Button>
                 </PopoverTrigger>
@@ -136,7 +136,7 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
               
               {(filterDate || filterStatus !== 'all' || filterDoctor !== 'all') && (
                 <Button variant="ghost" onClick={handleClearFilters}>
-                  <X className="ml-2 h-4 w-4" />
+                  <X className="mr-2 h-4 w-4" />
                   مسح الفلاتر
                 </Button>
               )}
@@ -146,11 +146,11 @@ export function AppointmentsTab({ searchTerm }: AppointmentsTabProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>المريض</TableHead>
-              <TableHead>الطبيب</TableHead>
-              <TableHead>التخصص</TableHead>
-              <TableHead>التاريخ والوقت</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead className="text-right">المريض</TableHead>
+              <TableHead className="text-right">الطبيب</TableHead>
+              <TableHead className="text-right">التخصص</TableHead>
+              <TableHead className="text-right">التاريخ والوقت</TableHead>
+              <TableHead className="text-right">الحالة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

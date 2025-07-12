@@ -121,7 +121,7 @@ export function Overview() {
                 loop: true,
                 direction: "rtl",
               }}
-              className="w-full"
+              className="w-full max-w-4xl mx-auto"
             >
               <CarouselContent>
                 {mockDoctors.map((doctor) => (
@@ -152,8 +152,8 @@ export function Overview() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
+              <CarouselPrevious className="right-[-1rem] -translate-x-0" />
+              <CarouselNext className="left-[-1rem] -translate-x-0"/>
             </Carousel>
           </CardContent>
         </Card>
