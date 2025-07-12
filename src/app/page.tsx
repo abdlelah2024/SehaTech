@@ -1,201 +1,63 @@
 
 "use client"
 
-import { useState } from "react"
-import {
-  Bell,
-  CircleUser,
-  Home,
-  LineChart,
-  Stethoscope,
-  CalendarDays,
-  Users,
-  Search,
-  CreditCard,
-  Menu,
-} from "lucide-react"
-
-import { Badge } from "@/components/ui/badge"
+import { Stethoscope, Key, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { Overview } from "@/components/dashboard/overview"
-import { AppointmentsTab } from "@/components/dashboard/appointments-tab"
-import { DoctorsTab } from "@/components/dashboard/doctors-tab"
-import { PatientsTab } from "@/components/dashboard/patients-tab"
-import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
-import { BillingTab } from "@/components/dashboard/billing-tab"
-import { cn } from "@/lib/utils"
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "analytics" | "billing";
-
-export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<TabValue>("dashboard");
-  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as TabValue);
-    setIsSheetOpen(false); // Close sheet on tab change
-  }
-
-  const navLinks = [
-    { id: "dashboard", label: "الرئيسية", icon: Home },
-    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6" },
-    { id: "doctors", label: "الأطباء", icon: Stethoscope },
-    { id: "patients", label: "المرضى", icon: Users },
-    { id: "billing", label: "الفواتير", icon: CreditCard },
-    { id: "analytics", label: "التحليلات", icon: LineChart },
-  ];
-
-  const renderNavLinks = (isMobile: boolean = false) => (
-    <nav className={cn(
-      isMobile ? "grid gap-2 text-lg font-medium" : "grid items-start px-2 text-sm font-medium lg:px-4"
-    )}>
-      {isMobile && (
-        <Link
-          href="#"
-          className="flex items-center gap-2 text-lg font-semibold mb-4"
-        >
-          <Stethoscope className="h-6 w-6 text-primary" />
-          <span className="sr-only">صحة تك</span>
-        </Link>
-      )}
-      {navLinks.map((link) => (
-        <button
-          key={link.id}
-          onClick={() => {
-             handleTabChange(link.id)
-          }}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
-             activeTab === link.id ? "bg-muted text-primary" : "text-muted-foreground",
-             isMobile && "mx-[-0.65rem] gap-4 rounded-xl",
-             isMobile && activeTab === link.id && "bg-muted text-foreground",
-             isMobile && activeTab !== link.id && "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
-          {link.label}
-          {link.badge && (
-             <Badge className="mr-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-              {link.badge}
-            </Badge>
-          )}
-        </button>
-      ))}
-    </nav>
-  );
-
-
+export default function LoginPage() {
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
-      <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">فتح قائمة التنقل</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="flex flex-col">
-               <SheetHeader>
-                <SheetTitle className="sr-only">قائمة التنقل</SheetTitle>
-              </SheetHeader>
-               {renderNavLinks(true)}
-            </SheetContent>
-          </Sheet>
-          <div className="w-full flex-1">
-             <form>
-              <div className="relative">
-                <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="بحث..."
-                  className="w-full appearance-none bg-background pr-8 shadow-none md:w-2/3 lg:w-1/3"
-                  value={globalSearchTerm}
-                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                />
-              </div>
-            </form>
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+            <div className="mb-4 inline-block">
+                <Stethoscope className="h-12 w-12 text-primary mx-auto" />
+            </div>
+          <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
+          <CardDescription>
+            أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <div className="relative">
+                <Mail className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="email" type="email" placeholder="m@example.com" required className="pr-8" />
+            </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <CircleUser className="h-5 w-5" />
-                <span className="sr-only">فتح قائمة المستخدم</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>حسابي</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>الإعدادات</DropdownMenuItem>
-              <DropdownMenuItem>الدعم</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl capitalize">
-              {navLinks.find(l => l.id === activeTab)?.label || activeTab}
-            </h1>
+          <div className="grid gap-2">
+             <div className="flex items-center">
+                 <Label htmlFor="password">كلمة المرور</Label>
+                <Link href="#" className="mr-auto inline-block text-sm underline">
+                  نسيت كلمة المرور؟
+                </Link>
+            </div>
+
+            <div className="relative">
+                <Key className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="password" type="password" required className="pr-8" />
+            </div>
           </div>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsContent value="dashboard">
-              <Overview />
-            </TabsContent>
-            <TabsContent value="appointments">
-              <AppointmentsTab searchTerm={globalSearchTerm} />
-            </TabsContent>
-            <TabsContent value="doctors">
-              <DoctorsTab searchTerm={globalSearchTerm} />
-            </TabsContent>
-            <TabsContent value="patients">
-              <PatientsTab searchTerm={globalSearchTerm} />
-            </TabsContent>
-            <TabsContent value="billing">
-              <BillingTab searchTerm={globalSearchTerm} />
-            </TabsContent>
-            <TabsContent value="analytics">
-              <AnalyticsTab />
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
-      <div className="hidden border-l bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
+        </CardContent>
+        <CardFooter>
+          <Link href="/dashboard" className="w-full">
+            <Button className="w-full">
+                تسجيل الدخول
             </Button>
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="">صحة تك</span>
-              <Stethoscope className="h-6 w-6 text-primary" />
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Link>
+        </CardFooter>
+      </Card>
+    </main>
   )
 }
