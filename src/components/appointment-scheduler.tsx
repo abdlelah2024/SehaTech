@@ -173,6 +173,8 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
   }
 
   const isNewPatientFlow = context === 'new-patient';
+  const isDoctorSelectionDisabled = !selectedPatientId && !doctorId;
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -255,7 +257,7 @@ export function AppointmentScheduler({ doctorId, onAppointmentCreated, onPatient
               <Label htmlFor="doctor" className="text-right">
                 Doctor
               </Label>
-              <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+              <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId} disabled={isDoctorSelectionDisabled}>
                 <SelectTrigger id="doctor" className="col-span-3">
                   <SelectValue placeholder="Select a doctor" />
                 </SelectTrigger>
