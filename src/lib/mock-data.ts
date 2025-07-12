@@ -1,3 +1,4 @@
+
 import type { Patient, Doctor, Appointment, RecentActivity, Transaction } from "./types";
 import { getPatientInitials } from "./utils";
 
@@ -29,7 +30,10 @@ export const mockDoctors: Doctor[] = [
     availability: [
       { date: '2024-08-01', slots: ['10:00', '10:30', '14:00', '14:30'] },
       { date: '2024-08-02', slots: ['09:00', '09:30', '11:00'] },
-    ]
+    ],
+    servicePrice: 75,
+    freeReturnDays: 14,
+    availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
   },
   {
     id: 'doctor-2',
@@ -41,7 +45,10 @@ export const mockDoctors: Doctor[] = [
     availability: [
        { date: '2024-08-01', slots: ['14:00', '14:30', '15:00', '15:30'] },
        { date: '2024-08-03', slots: ['10:00', '10:30'] },
-    ]
+    ],
+    servicePrice: 60,
+    freeReturnDays: 10,
+    availableDays: ['السبت', 'الاثنين', 'الأربعاء'],
   },
   {
     id: 'doctor-3',
@@ -52,7 +59,10 @@ export const mockDoctors: Doctor[] = [
     isAvailableToday: false,
     availability: [
        { date: '2024-08-05', slots: ['09:00', '09:30', '10:00'] },
-    ]
+    ],
+    servicePrice: 50,
+    freeReturnDays: 7,
+    availableDays: ['الاثنين', 'الأربعاء', 'الجمعة'],
   },
   {
     id: 'doctor-4',
@@ -64,7 +74,10 @@ export const mockDoctors: Doctor[] = [
     availability: [
       { date: '2024-08-01', slots: ['11:30', '12:00', '16:00'] },
       { date: '2024-08-02', slots: ['14:00', '14:30'] },
-    ]
+    ],
+    servicePrice: 90,
+    freeReturnDays: 21,
+    availableDays: ['السبت', 'الأحد', 'الثلاثاء', 'الخميس'],
   }
 ];
 

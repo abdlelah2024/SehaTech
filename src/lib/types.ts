@@ -1,3 +1,4 @@
+
 export interface Patient {
   id: string;
   name: string;
@@ -20,6 +21,9 @@ export interface Doctor {
     date: string;
     slots: string[];
   }[];
+  servicePrice?: number;
+  freeReturnDays?: number;
+  availableDays?: string[];
 }
 
 export interface Appointment {
