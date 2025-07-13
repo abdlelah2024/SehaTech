@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { AppointmentScheduler } from '../appointment-scheduler';
 import { useDebounce } from '@/hooks/use-debounce';
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, where } from "firebase/firestore"
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from "firebase/firestore"
+import { useToast } from '@/hooks/use-toast';
 
 interface GlobalSearchProps {
   onViewProfile: (patient: Patient) => void;
@@ -24,6 +25,7 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!debouncedSearchTerm) {
@@ -67,12 +69,26 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
      return isPhone ? { phone: searchTerm } : { name: searchTerm };
   }
 
-  const handlePatientCreated = (newPatient: Patient) => {
-    // We would ideally update a global state here
-    setIsNewPatientModalOpen(false);
-    // Potentially select the new patient
-    onViewProfile(newPatient);
-  }
+  const handlePatientCreated = async (newPatientData: Omit<Patient, 'id'>) => {
+    try {
+        const docRef = await addDoc(collection(db, "patients"), {
+            ...newPatientData,
+            createdAt: serverTimestamp(),
+        });
+        toast({
+            title: "تم إنشاء ملف المريض بنجاح!",
+        });
+        setIsNewPatientModalOpen(false);
+        setSearchTerm('');
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من إضافة المريض.",
+        });
+    }
+  };
 
   return (
     <div className="relative w-full max-w-md" ref={searchWrapperRef}>
