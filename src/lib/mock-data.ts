@@ -1,5 +1,5 @@
 
-import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation } from "./types";
+import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation, AuditLog } from "./types";
 import { getPatientInitials } from "./utils";
 
 const patientNames = [
@@ -247,4 +247,11 @@ export const mockConversations: Conversation[] = [
   }
 ]
 
+export const mockAuditLogs: AuditLog[] = [
+    { id: 'log-1', user: 'علي عبدالله', userRole: 'admin', action: 'أضاف المستخدم الجديد: سالم محمد', section: 'المستخدمون', timestamp: new Date(now.getTime() - 10 * 60 * 1000).toISOString() },
+    { id: 'log-2', user: 'سالم محمد', userRole: 'receptionist', action: 'حجز موعدًا للمريض: أحمد الصالح', section: 'المواعيد', timestamp: new Date(now.getTime() - 8 * 60 * 1000).toISOString() },
+    { id: 'log-3', user: 'علي عبدالله', userRole: 'admin', action: 'حذف الطبيب: د. ويليام رودريغيز', section: 'الأطباء', timestamp: new Date(now.getTime() - 5 * 60 * 1000).toISOString() },
+    { id: 'log-4', user: 'د. إميلي كارتر', userRole: 'doctor', action: 'عرض ملف المريض: فاطمة الزهراء', section: 'المرضى', timestamp: new Date(now.getTime() - 3 * 60 * 1000).toISOString() },
+    { id: 'log-5', user: 'سالم محمد', userRole: 'receptionist', action: 'سجل فاتورة للمريض: خالد المصري', section: 'الفواتير', timestamp: new Date(now.getTime() - 2 * 60 * 1000).toISOString() },
+];
     

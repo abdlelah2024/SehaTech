@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -13,6 +14,7 @@ import {
   CreditCard,
   Menu,
   MessageSquare,
+  History,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -36,15 +38,19 @@ import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
 import { BillingTab } from "@/components/dashboard/billing-tab"
 import { UsersTab } from "@/components/dashboard/users-tab"
 import { ChatTab } from "@/components/dashboard/chat-tab"
+import { AuditLogTab } from "@/components/dashboard/audit-log-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
-import type { Patient } from "@/lib/types"
+import type { Patient, UserRole } from "@/lib/types"
 import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "analytics" | "users" | "chat";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "users" | "audit-log";
+
+// In a real app, this would come from an authentication context
+const currentUserRole: UserRole = 'admin';
 
 export default function Dashboard() {
   const searchParams = useSearchParams()
@@ -56,32 +62,34 @@ export default function Dashboard() {
   const [selectedPatientForAppointment, setSelectedPatientForAppointment] = useState<Patient | null>(null);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
+  const navLinks = [
+    { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard", roles: ['admin', 'receptionist', 'doctor'] },
+    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments", roles: ['admin', 'receptionist', 'doctor'] },
+    { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors", roles: ['admin', 'receptionist'] },
+    { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients", roles: ['admin', 'receptionist', 'doctor'] },
+    { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing", roles: ['admin', 'receptionist'] },
+    { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", roles: ['admin', 'receptionist', 'doctor'] },
+    { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", roles: ['admin'] },
+    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", roles: ['admin'] },
+    { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", roles: ['admin'] },
+  ];
+  
+  const accessibleLinks = navLinks.filter(link => link.roles.includes(currentUserRole));
   
   useEffect(() => {
     const tab = searchParams.get('tab') as TabValue;
-    if (tab && navLinks.some(l => l.id === tab)) {
+    if (tab && accessibleLinks.some(l => l.id === tab)) {
       setActiveTab(tab);
     } else {
       setActiveTab('dashboard');
     }
-  }, [searchParams]);
+  }, [searchParams, accessibleLinks]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TabValue);
     window.history.pushState({}, '', `/dashboard?tab=${value}`);
     setIsSheetOpen(false); // Close sheet on tab change
   }
-
-  const navLinks = [
-    { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard" },
-    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments" },
-    { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors" },
-    { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients" },
-    { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing" },
-    { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat" },
-    { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics" },
-    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users" },
-  ];
 
   const renderNavLinks = (isMobile: boolean = false) => (
     <nav className={cn(
@@ -98,7 +106,7 @@ export default function Dashboard() {
           <span className="">صحة تك</span>
         </Link>
       )}
-      {navLinks.map((link) => (
+      {accessibleLinks.map((link) => (
         <Link
           key={link.id}
           href={link.href}
@@ -115,7 +123,7 @@ export default function Dashboard() {
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
           {link.badge && (
-             <Badge className="mr-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+             <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
           )}
@@ -135,7 +143,24 @@ export default function Dashboard() {
 
   return (
     <>
-    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-l bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <Stethoscope className="h-6 w-6 text-primary" />
+              <span className="">صحة تك</span>
+            </Link>
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
+      </div>
        <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -156,6 +181,15 @@ export default function Dashboard() {
                {renderNavLinks(true)}
             </SheetContent>
           </Sheet>
+          <div className="w-full flex-1">
+             <GlobalSearch 
+                onViewProfile={setSelectedPatientForProfile}
+                onNewAppointment={(patient) => {
+                  setSelectedPatientForAppointment(patient);
+                  setIsAppointmentModalOpen(true);
+                }}
+             />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
@@ -172,19 +206,10 @@ export default function Dashboard() {
               <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-           <div className="w-full flex-1">
-             <GlobalSearch 
-                onViewProfile={setSelectedPatientForProfile}
-                onNewAppointment={(patient) => {
-                  setSelectedPatientForAppointment(patient);
-                  setIsAppointmentModalOpen(true);
-                }}
-             />
-          </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl capitalize">
+            <h1 className="text-lg font-semibold md:text-2xl">
               {navLinks.find(l => l.id === activeTab)?.label}
             </h1>
           </div>
@@ -213,25 +238,11 @@ export default function Dashboard() {
             <TabsContent value="users">
               <UsersTab />
             </TabsContent>
+            <TabsContent value="audit-log">
+              <AuditLogTab />
+            </TabsContent>
           </Tabs>
         </main>
-      </div>
-       <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="">صحة تك</span>
-              <Stethoscope className="h-6 w-6 text-primary" />
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
       </div>
     </div>
     {selectedPatientForProfile && (

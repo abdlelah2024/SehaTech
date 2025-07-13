@@ -76,4 +76,12 @@ export interface Conversation {
   messages: Message[];
 }
 
+export interface AuditLog {
+    id: string;
+    user: string;
+    userRole: UserRole;
+    action: string;
+    section: string;
+    timestamp: string;
+}
     
