@@ -13,63 +13,81 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { mockUsers, mockConversations } from "@/lib/mock-data"
 import { getPatientInitials } from "@/lib/utils"
 import { cn } from "@/lib/utils"
-import type { User, Conversation } from "@/lib/types"
-import { Send, Search } from "lucide-react"
-
-// Assuming the current user is the admin for this mock-up
-const currentUserId = "user-1" 
+import type { User, Conversation, Message } from "@/lib/types"
+import { Send, Search, MessageSquare } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore"
+import { auth } from "@/lib/firebase"
+import { useAuthState } from "react-firebase-hooks/auth"
 
 export function ChatTab() {
+  const [currentUser] = useAuthState(auth);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedUser, setSelectedUser] = useState<User | null>(mockUsers.find(u => u.id === 'user-2') || null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [message, setMessage] = useState("")
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations)
+  const [conversations, setConversations] = useState<{[key: string]: Conversation}>({});
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const users = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as User);
+        setAllUsers(users);
+    });
+    return unsubscribe;
+  }, []);
+
   const filteredUsers = useMemo(() => {
-    // Exclude the current user from the list
-    return mockUsers.filter(user =>
-      user.id !== currentUserId &&
+    if (!currentUser) return [];
+    return allUsers.filter(user =>
+      user.id !== currentUser.uid &&
       user.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [searchTerm])
-
+  }, [allUsers, currentUser, searchTerm]);
+  
   const selectedConversation = useMemo(() => {
-    if (!selectedUser) return null;
-    return conversations.find(c => c.userId === selectedUser.id)
-  }, [selectedUser, conversations])
+      if (!selectedUser) return null;
+      return conversations[selectedUser.id];
+  }, [selectedUser, conversations]);
 
-  const handleSendMessage = () => {
-    if (!message.trim() || !selectedUser) return;
 
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: currentUserId,
-      receiverId: selectedUser.id,
-      text: message,
-      timestamp: new Date().toISOString(),
-    }
+  const handleSendMessage = async () => {
+    if (!message.trim() || !selectedUser || !currentUser) return;
 
-    setConversations(prev => {
-      const newConversations = [...prev];
-      const conversationIndex = newConversations.findIndex(c => c.userId === selectedUser.id);
-      
-      if (conversationIndex > -1) {
-        newConversations[conversationIndex].messages.push(newMessage);
-      } else {
-        newConversations.push({
-          userId: selectedUser.id,
-          messages: [newMessage],
-        });
-      }
-      return newConversations;
+    const conversationId = [currentUser.uid, selectedUser.id].sort().join('_');
+    const messagesCol = collection(db, "conversations", conversationId, "messages");
+    
+    await addDoc(messagesCol, {
+        senderId: currentUser.uid,
+        text: message,
+        timestamp: serverTimestamp(),
     });
 
     setMessage("");
   }
+  
+  useEffect(() => {
+      if (!selectedUser || !currentUser) return;
+      const conversationId = [currentUser.uid, selectedUser.id].sort().join('_');
+      const q = query(collection(db, "conversations", conversationId, "messages"), orderBy("timestamp", "asc"));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+          const messages = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Message);
+          setConversations(prev => ({
+              ...prev,
+              [selectedUser.id]: {
+                  userId: selectedUser.id,
+                  messages,
+              }
+          }))
+      });
+
+      return unsubscribe;
+  }, [selectedUser, currentUser]);
+
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -84,7 +102,7 @@ export function ChatTab() {
       <div className="grid grid-cols-1 md:grid-cols-4 h-full">
         {/* Chat Window */}
         <div className="col-span-1 md:col-span-3 border-l h-full flex flex-col">
-          {selectedUser ? (
+          {selectedUser && currentUser ? (
             <>
               <div className="flex items-center p-4 border-b">
                 <Avatar className="ml-4">
@@ -93,22 +111,19 @@ export function ChatTab() {
                 </Avatar>
                 <div className="flex-grow text-right">
                   <p className="font-semibold">{selectedUser.name}</p>
-                  <p className={cn("text-xs", selectedUser.status === 'online' ? 'text-green-500' : 'text-muted-foreground')}>
-                    {selectedUser.status === 'online' ? 'متصل' : 'غير متصل'}
-                  </p>
                 </div>
               </div>
               <ScrollArea className="flex-grow p-4">
                  <div className="space-y-4">
-                    {selectedConversation?.messages.map((msg, index) => (
+                    {selectedConversation?.messages.map((msg) => (
                       <div
-                        key={index}
+                        key={msg.id}
                         className={cn(
                           "flex items-end gap-2",
-                          msg.senderId === currentUserId ? "justify-end" : "justify-start"
+                          msg.senderId === currentUser.uid ? "justify-end" : "justify-start"
                         )}
                       >
-                         {msg.senderId !== currentUserId && (
+                         {msg.senderId !== currentUser.uid && (
                            <Avatar className="h-8 w-8">
                               <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(selectedUser.name)}`} />
                               <AvatarFallback>{getPatientInitials(selectedUser.name)}</AvatarFallback>
@@ -117,14 +132,14 @@ export function ChatTab() {
                         <div
                           className={cn(
                             "max-w-xs md:max-w-md rounded-lg px-4 py-2",
-                            msg.senderId === currentUserId
+                            msg.senderId === currentUser.uid
                               ? "bg-primary text-primary-foreground rounded-br-none"
                               : "bg-muted rounded-bl-none"
                           )}
                         >
                           <p className="text-sm">{msg.text}</p>
-                          <p className={cn("text-xs mt-1",  msg.senderId === currentUserId ? "text-primary-foreground/70 text-left" : "text-muted-foreground text-right")}>
-                             {new Date(msg.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                           <p className={cn("text-xs mt-1",  msg.senderId === currentUser.uid ? "text-primary-foreground/70 text-left" : "text-muted-foreground text-right")}>
+                             {msg.timestamp ? new Date(msg.timestamp?.seconds * 1000).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '...'}
                           </p>
                         </div>
                       </div>
@@ -188,14 +203,11 @@ export function ChatTab() {
                 <Avatar className="relative">
                   <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(user.name)}`} data-ai-hint="person avatar" />
                   <AvatarFallback>{getPatientInitials(user.name)}</AvatarFallback>
-                  {user.status === 'online' && (
-                    <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background" />
-                  )}
                 </Avatar>
                 <div className="flex-grow">
                   <p className="font-semibold">{user.name}</p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {conversations.find(c => c.userId === user.id)?.messages.at(-1)?.text || `ابدأ محادثة مع ${user.name}`}
+                    {conversations[user.id]?.messages.slice(-1)[0]?.text || `ابدأ محادثة مع ${user.name}`}
                   </p>
                 </div>
               </div>
@@ -206,5 +218,3 @@ export function ChatTab() {
     </Card>
   )
 }
-
-    

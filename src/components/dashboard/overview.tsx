@@ -33,12 +33,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { mockDoctors, mockPatients, mockTransactions, mockAppointments, mockUsers } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getPatientInitials } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { useState, useMemo } from "react"
-import type { Appointment, User, Transaction, Patient } from "@/lib/types"
+import { useState, useMemo, useEffect } from "react"
+import type { Appointment, User, Transaction, Patient, Doctor } from "@/lib/types"
 import { LocalizedDateTime } from "../localized-date-time"
 import { format, isToday, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -47,6 +46,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar } from "../ui/calendar"
 import type { DateRange } from "react-day-picker"
 import { useToast } from "@/hooks/use-toast"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs } from "firebase/firestore"
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -82,36 +83,51 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
     'Follow-up': 'followup'
 };
 
-const userStatuses = [
-  { status: 'online', label: 'متصل', color: 'bg-green-500' },
-  { status: 'offline', label: 'غير متصل', color: 'bg-gray-400' },
-  { status: 'inactive', label: 'غير نشط', color: 'bg-yellow-500' },
-];
-
-const usersWithStatus: (User & { connectionStatus: 'online' | 'offline' | 'inactive' })[] = mockUsers.map((user, index) => ({
-  ...user,
-  connectionStatus: index % 3 === 0 ? 'online' : index % 3 === 1 ? 'offline' : 'inactive',
-}));
-
 const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
 
 
 export function Overview() {
-  const [appointmentsState, setAppointmentsState] = useState<Appointment[]>(mockAppointments);
+  const [appointmentsState, setAppointmentsState] = useState<Appointment[]>([]);
+  const [transactionsState, setTransactionsState] = useState<Transaction[]>([]);
+  const [patientsState, setPatientsState] = useState<Patient[]>([]);
+  const [doctorsState, setDoctorsState] = useState<Doctor[]>([]);
+  const [usersState, setUsersState] = useState<User[]>([]);
+
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>();
   const { toast } = useToast();
 
-  const handleStatusChange = (appointmentId: string, newStatus: Appointment['status']) => {
-    setAppointmentsState(prev =>
-      prev.map(appt =>
-        appt.id === appointmentId ? { ...appt, status: newStatus } : appt
-      )
-    );
-    toast({
-        title: "تم تحديث الحالة",
-        description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
-    })
+  useEffect(() => {
+    const unsubAppointments = onSnapshot(query(collection(db, "appointments")), snap => setAppointmentsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Appointment)));
+    const unsubTransactions = onSnapshot(query(collection(db, "transactions")), snap => setTransactionsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Transaction)));
+    const unsubPatients = onSnapshot(query(collection(db, "patients")), snap => setPatientsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Patient)));
+    const unsubDoctors = onSnapshot(query(collection(db, "doctors")), snap => setDoctorsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Doctor)));
+    const unsubUsers = onSnapshot(query(collection(db, "users")), snap => setUsersState(snap.docs.map(d => ({id: d.id, ...d.data()}) as User)));
+    return () => {
+      unsubAppointments();
+      unsubTransactions();
+      unsubPatients();
+      unsubDoctors();
+      unsubUsers();
+    }
+  }, []);
+
+  const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
+    const appointmentRef = doc(db, "appointments", appointmentId);
+    try {
+        await updateDoc(appointmentRef, { status: newStatus });
+        toast({
+            title: "تم تحديث الحالة",
+            description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
+        })
+    } catch (e) {
+         console.error("Error updating document: ", e);
+         toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من تحديث حالة الموعد.",
+        });
+    }
   };
 
   const filteredData = useMemo(() => {
@@ -121,31 +137,32 @@ export function Overview() {
       : { start: startOfDay(today), end: endOfDay(today) };
 
     const appointments = appointmentsState.filter(appointment => {
-      const appointmentDate = parseISO(appointment.dateTime);
+      const appointmentDate = new Date(appointment.dateTime);
       const inDateRange = isWithinInterval(appointmentDate, interval);
       const matchesDoctor = filterDoctor === 'all' || appointment.doctorId === filterDoctor;
       return inDateRange && matchesDoctor;
     });
 
-    const transactions = mockTransactions.filter(transaction => {
-      const transactionDate = parseISO(transaction.date);
+    const transactions = transactionsState.filter(transaction => {
+      const transactionDate = transaction.date.toDate();
       const inDateRange = isWithinInterval(transactionDate, interval);
-      return inDateRange;
+      const matchesDoctor = filterDoctor === 'all' ? true : appointments.some(a => a.patientId === transaction.patientId);
+      return inDateRange && matchesDoctor;
     });
 
-    const patients = mockPatients.filter(patient => {
-        const firstAppointment = mockAppointments
+    const patients = patientsState.filter(patient => {
+        const firstAppointment = appointmentsState
             .filter(a => a.patientId === patient.id)
             .sort((a,b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
         if (firstAppointment) {
-            return isWithinInterval(parseISO(firstAppointment.dateTime), interval);
+            return isWithinInterval(new Date(firstAppointment.dateTime), interval);
         }
         return false;
     });
     
-    const doctorAppointmentsCount = mockDoctors.map(doctor => {
+    const doctorAppointmentsCount = doctorsState.map(doctor => {
         const count = appointmentsState.filter(a => {
-             const appointmentDate = parseISO(a.dateTime);
+             const appointmentDate = new Date(a.dateTime);
              const inDateRange = isWithinInterval(appointmentDate, interval);
              return a.doctorId === doctor.id && inDateRange;
         }).length;
@@ -158,24 +175,13 @@ export function Overview() {
       .reduce((sum, t) => sum + t.amount, 0);
 
     return { appointments, transactions, patients, totalRevenue, doctorAppointmentsCount };
-  }, [filterDoctor, filterDateRange, appointmentsState]);
+  }, [filterDoctor, filterDateRange, appointmentsState, transactionsState, patientsState, doctorsState]);
 
   const appointmentsToday = useMemo(() => {
     return appointmentsState
-        .filter(a => isToday(parseISO(a.dateTime)))
+        .filter(a => isToday(new Date(a.dateTime)))
         .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
   }, [appointmentsState]);
-
-  
-  const getUserStatus = (status: 'online' | 'offline' | 'inactive') => {
-      const statusInfo = userStatuses.find(s => s.status === status);
-      return (
-        <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusInfo?.color}`}></span>
-            <span>{statusInfo?.label}</span>
-        </div>
-      )
-  }
   
   const handleClearFilters = () => {
     setFilterDoctor("all");
@@ -196,7 +202,7 @@ export function Overview() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">كل الأطباء</SelectItem>
-                    {mockDoctors.map(doctor => (
+                    {doctorsState.map(doctor => (
                     <SelectItem key={doctor.id} value={doctor.id}>د. {doctor.name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -288,7 +294,7 @@ export function Overview() {
             <Stethoscope className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{mockDoctors.length}</div>
+            <div className="text-2xl font-bold">+{doctorsState.length}</div>
             <p className="text-xs text-muted-foreground">
               إجمالي الأطباء في النظام
             </p>
@@ -321,9 +327,6 @@ export function Overview() {
                                 <TableRow key={appointment.id}>
                                 <TableCell>
                                     <div className="font-medium">{appointment.patientName}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {mockPatients.find(p => p.id === appointment.patientId)?.phone}
-                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="font-medium">{appointment.doctorName}</div>

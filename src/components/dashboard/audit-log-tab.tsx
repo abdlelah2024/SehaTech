@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -25,11 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockAuditLogs, mockUsers } from "@/lib/mock-data"
 import type { AuditLog, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { Search, X } from "lucide-react"
 import { LocalizedDateTime } from "../localized-date-time"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
 
 const roleTranslations: { [key in UserRole]: string } = {
   admin: 'مدير',
@@ -38,10 +39,21 @@ const roleTranslations: { [key in UserRole]: string } = {
 };
 
 export function AuditLogTab() {
-  const [logs] = useState<AuditLog[]>(mockAuditLogs);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterSection, setFilterSection] = useState<string>("all");
+  
+  // In a real app, logs would be fetched from Firestore.
+  // For now, we'll just display an empty state as we don't have a logging system yet.
+  // useEffect(() => {
+  //   const q = query(collection(db, "auditLogs"), orderBy("timestamp", "desc"));
+  //   const unsubscribe = onSnapshot(q, (snapshot) => {
+  //       setLogs(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as AuditLog));
+  //   });
+  //   return () => unsubscribe();
+  // }, []);
+
 
   const sections = useMemo(() => [...new Set(logs.map(log => log.section))], [logs]);
   const roles = useMemo(() => [...new Set(logs.map(log => log.userRole))], [logs]);
@@ -84,7 +96,7 @@ export function AuditLogTab() {
             />
           </div>
 
-          <Select value={filterRole} onValueChange={setFilterRole}>
+          <Select value={filterRole} onValueChange={setFilterRole} disabled={roles.length === 0}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="تصفية حسب الدور" />
             </SelectTrigger>
@@ -96,7 +108,7 @@ export function AuditLogTab() {
             </SelectContent>
           </Select>
           
-          <Select value={filterSection} onValueChange={setFilterSection}>
+          <Select value={filterSection} onValueChange={setFilterSection} disabled={sections.length === 0}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="تصفية حسب القسم" />
             </SelectTrigger>
@@ -149,7 +161,7 @@ export function AuditLogTab() {
               )) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
-                    لا توجد سجلات تطابق معايير البحث.
+                    لا توجد سجلات لعرضها. (ميزة قيد التطوير)
                   </TableCell>
                 </TableRow>
               )}

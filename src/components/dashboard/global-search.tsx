@@ -1,15 +1,16 @@
 
+
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus, CalendarPlus, User } from "lucide-react";
-import { mockPatients } from "@/lib/mock-data";
 import type { Patient } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { AppointmentScheduler } from '../appointment-scheduler';
 import { useDebounce } from '@/hooks/use-debounce';
-
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, where } from "firebase/firestore"
 
 interface GlobalSearchProps {
   onViewProfile: (patient: Patient) => void;
@@ -22,15 +23,30 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const [searchResults, setSearchResults] = useState<Patient[]>([]);
 
+  useEffect(() => {
+    if (!debouncedSearchTerm) {
+        setSearchResults([]);
+        return;
+    }
+    
+    // As Firestore doesn't support native text search on parts of a string efficiently on the client-side
+    // without a third-party service like Algolia, we'll fetch all patients and filter locally.
+    // This is not ideal for very large datasets.
+    const q = query(collection(db, "patients"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const patients = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Patient);
+        const filtered = patients.filter(patient => 
+            patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            (patient.phone && patient.phone.includes(debouncedSearchTerm))
+        ).slice(0, 5);
+        setSearchResults(filtered);
+    });
 
-  const filteredPatients = useMemo(() => {
-    if (!debouncedSearchTerm) return [];
-    return mockPatients.filter((patient) =>
-      patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      (patient.phone && patient.phone.includes(debouncedSearchTerm))
-    ).slice(0, 5); // Limit results to 5
+    return unsubscribe;
   }, [debouncedSearchTerm]);
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -75,9 +91,9 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
       {showResults && (
         <div className="absolute z-50 mt-2 w-full rounded-md border bg-card text-card-foreground shadow-lg">
           <div className="p-2">
-            {filteredPatients.length > 0 ? (
+            {searchResults.length > 0 ? (
               <ul>
-                {filteredPatients.map((patient) => (
+                {searchResults.map((patient) => (
                   <li key={patient.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
                     <div>
                       <p className="font-semibold">{patient.name}</p>
