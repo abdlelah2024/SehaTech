@@ -16,11 +16,7 @@ export function LocalizedDateTime({ dateTime, locale = 'ar-EG', options = {} }: 
     // This effect runs only on the client, after hydration
     try {
       const date = new Date(dateTime);
-      const finalOptions: Intl.DateTimeFormatOptions = {
-        dateStyle: 'short',
-        ...options,
-      };
-      setFormattedDate(date.toLocaleString(locale, finalOptions));
+      setFormattedDate(date.toLocaleString(locale, options));
     } catch (e) {
       // Fallback for invalid dates
       setFormattedDate(dateTime);
