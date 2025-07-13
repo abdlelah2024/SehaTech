@@ -1,7 +1,7 @@
-import type {NextConfig} from 'next';
+import 'dotenv/config';
 
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
