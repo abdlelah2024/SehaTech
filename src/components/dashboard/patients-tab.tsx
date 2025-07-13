@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -34,7 +35,7 @@ interface PatientsTabProps {
 export function PatientsTab({ }: PatientsTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
+  const [patients, setPatients] = useState<Patient[]>(() => [...mockPatients].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
   
   const handlePatientCreated = (newPatient: Patient) => {
     setPatients(prevPatients => [newPatient, ...prevPatients]);

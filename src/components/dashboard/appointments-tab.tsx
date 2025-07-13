@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -107,7 +108,7 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
       (filterStatus === 'all' || appointment.status === filterStatus) &&
       (filterDoctor === 'all' || appointment.doctorId === filterDoctor) &&
       (!filterDate || isSameDay(new Date(appointment.dateTime), filterDate))
-    ).sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+    );
   }, [appointments, searchTerm, filterStatus, filterDoctor, filterDate]);
 
   return (

@@ -1,4 +1,5 @@
 
+
 "use client"
 import { Users, CalendarPlus, Stethoscope, Activity, Wifi, Circle, Database, CheckCircle, XCircle, UserPlus, FileText, X } from "lucide-react"
 import {
@@ -162,7 +163,7 @@ export function Overview() {
   const appointmentsToday = useMemo(() => {
     return appointmentsState
         .filter(a => isToday(parseISO(a.dateTime)))
-        .sort((a,b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+        .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
   }, [appointmentsState]);
 
   

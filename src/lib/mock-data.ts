@@ -1,9 +1,9 @@
 
 import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation, AuditLog } from "./types";
 import { getPatientInitials } from "./utils";
-import { subDays } from 'date-fns';
+import { subDays, set } from 'date-fns';
 
-const now = new Date();
+const now = new Date(2025, 6, 13, 10, 30, 0); // Use a fixed date for deterministic mock data
 
 const patientNames = [
   'أحمد الصالح', 'فاطمة الزهراء', 'خالد المصري', 'عائشة الشامي', 'يوسف العراقي',
@@ -23,7 +23,7 @@ export const mockPatients: Patient[] = patientNames.map((name, index) => ({
 
 // Function to get a future date string
 const getFutureDate = (daysToAdd: number): string => {
-    const date = new Date();
+    const date = new Date(now);
     date.setDate(date.getDate() + daysToAdd);
     return date.toISOString().split('T')[0];
 };
@@ -103,7 +103,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date(now.getTime()).toISOString(),
+    dateTime: set(now, { hours: 10, minutes: 0 }).toISOString(),
     status: 'Scheduled',
   },
   {
@@ -113,7 +113,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-2',
     doctorName: `د. ${mockDoctors[1].name}`,
     doctorSpecialty: mockDoctors[1].specialty,
-    dateTime: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+    dateTime: subDays(now, 1).toISOString(),
     status: 'Completed',
   },
   {
@@ -123,7 +123,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-3',
     doctorName: `د. ${mockDoctors[2].name}`,
     doctorSpecialty: mockDoctors[2].specialty,
-    dateTime: new Date(now.getTime()).toISOString(),
+    dateTime: set(now, { hours: 11, minutes: 30 }).toISOString(),
     status: 'Waiting',
   },
    {
@@ -133,7 +133,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-2',
     doctorName: `د. ${mockDoctors[1].name}`,
     doctorSpecialty: mockDoctors[1].specialty,
-    dateTime: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    dateTime: subDays(now, 5).toISOString(),
     status: 'Completed',
   },
   {
@@ -143,7 +143,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-2',
     doctorName: `د. ${mockDoctors[1].name}`,
     doctorSpecialty: mockDoctors[1].specialty,
-    dateTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    dateTime: subDays(now, -3).toISOString(),
     status: 'Follow-up',
   },
   {
@@ -153,7 +153,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    dateTime: subDays(now, -2).toISOString(),
     status: 'Scheduled',
   },
    {
@@ -163,7 +163,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-4',
     doctorName: `د. ${mockDoctors[3].name}`,
     doctorSpecialty: mockDoctors[3].specialty,
-    dateTime: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    dateTime: subDays(now, 10).toISOString(),
     status: 'Completed',
   },
    // Add past appointments for patient 1 with doctor 1 to test suggestions
@@ -174,7 +174,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+    dateTime: subDays(now, 7).toISOString(),
     status: 'Completed',
   },
   {
@@ -184,7 +184,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+    dateTime: subDays(now, 14).toISOString(),
     status: 'Completed',
   },
   {
@@ -194,10 +194,10 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date().toISOString(),
+    dateTime: set(now, { hours: 9, minutes: 0 }).toISOString(),
     status: 'Completed',
   }
-];
+].sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
 export const mockRecentActivities: RecentActivity[] = [
   {
@@ -227,12 +227,12 @@ export const mockRecentActivities: RecentActivity[] = [
 ];
 
 export const mockTransactions: Transaction[] = [
-  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدي' },
-  { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'زيارة متابعة' },
-  { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
-  { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },
-  { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'تخطيط قلب' },
-  { id: 'txn-6', patientId: 'patient-6', patientName: mockPatients[5].name, date: new Date().toISOString(), amount: 7500, status: 'Success', service: 'استشارة' },
+  { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: subDays(now, 1).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدي' },
+  { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: subDays(now, 5).toISOString(), amount: 7500, status: 'Success', service: 'زيارة متابعة' },
+  { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: subDays(now, 10).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
+  { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: subDays(now, 2).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },
+  { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: subDays(now, 1).toISOString(), amount: 7500, status: 'Success', service: 'تخطيط قلب' },
+  { id: 'txn-6', patientId: 'patient-6', patientName: mockPatients[5].name, date: now.toISOString(), amount: 7500, status: 'Success', service: 'استشارة' },
 ];
 
 export const mockUsers: User[] = [
@@ -246,27 +246,27 @@ export const mockConversations: Conversation[] = [
   {
     userId: 'user-2', // سالم محمد
     messages: [
-      { id: 'msg-1', senderId: 'user-1', receiverId: 'user-2', text: 'مرحباً سالم، هل يمكنك مراجعة جدول مواعيد د. إميلي لهذا اليوم؟', timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString() },
-      { id: 'msg-2', senderId: 'user-2', receiverId: 'user-1', text: 'أهلاً علي. بالتأكيد، لحظة من فضلك.', timestamp: new Date(now.getTime() - 59 * 60 * 1000).toISOString() },
-      { id: 'msg-3', senderId: 'user-2', receiverId: 'user-1', text: 'الجدول يبدو ممتلئاً بعد الظهر، ولكن هناك فراغ في الساعة 11 صباحاً.', timestamp: new Date(now.getTime() - 58 * 60 * 1000).toISOString() },
-      { id: 'msg-4', senderId: 'user-1', receiverId: 'user-2', text: 'ممتاز، شكراً جزيلاً لك.', timestamp: new Date(now.getTime() - 57 * 60 * 1000).toISOString() },
+      { id: 'msg-1', senderId: 'user-1', receiverId: 'user-2', text: 'مرحباً سالم، هل يمكنك مراجعة جدول مواعيد د. إميلي لهذا اليوم؟', timestamp: subDays(now, 0.05).toISOString() },
+      { id: 'msg-2', senderId: 'user-2', receiverId: 'user-1', text: 'أهلاً علي. بالتأكيد، لحظة من فضلك.', timestamp: subDays(now, 0.04).toISOString() },
+      { id: 'msg-3', senderId: 'user-2', receiverId: 'user-1', text: 'الجدول يبدو ممتلئاً بعد الظهر، ولكن هناك فراغ في الساعة 11 صباحاً.', timestamp: subDays(now, 0.03).toISOString() },
+      { id: 'msg-4', senderId: 'user-1', receiverId: 'user-2', text: 'ممتاز، شكراً جزيلاً لك.', timestamp: subDays(now, 0.02).toISOString() },
     ]
   },
   {
     userId: 'user-3', // د. إميلي كارتر
     messages: [
-       { id: 'msg-5', senderId: 'user-1', receiverId: 'user-3', text: 'مرحباً د. إميلي، هل يمكنكِ إلقاء نظرة على نتائج المريض أحمد الصالح؟', timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString() },
-       { id: 'msg-6', senderId: 'user-3', receiverId: 'user-1', text: 'أهلاً، سأقوم بذلك حالاً.', timestamp: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString() },
+       { id: 'msg-5', senderId: 'user-1', receiverId: 'user-3', text: 'مرحباً د. إميلي، هل يمكنكِ إلقاء نظرة على نتائج المريض أحمد الصالح؟', timestamp: subDays(now, 0.1).toISOString() },
+       { id: 'msg-6', senderId: 'user-3', receiverId: 'user-1', text: 'أهلاً، سأقوم بذلك حالاً.', timestamp: subDays(now, 0.09).toISOString() },
     ]
   }
 ]
 
 export const mockAuditLogs: AuditLog[] = [
-    { id: 'log-1', user: 'علي عبدالله', userRole: 'admin', action: 'أضاف المستخدم الجديد: سالم محمد', section: 'المستخدمون', timestamp: new Date(now.getTime() - 10 * 60 * 1000).toISOString() },
-    { id: 'log-2', user: 'سالم محمد', userRole: 'receptionist', action: 'حجز موعدًا للمريض: أحمد الصالح', section: 'المواعيد', timestamp: new Date(now.getTime() - 8 * 60 * 1000).toISOString() },
-    { id: 'log-3', user: 'علي عبدالله', userRole: 'admin', action: 'حذف الطبيب: د. ويليام رودريغيز', section: 'الأطباء', timestamp: new Date(now.getTime() - 5 * 60 * 1000).toISOString() },
-    { id: 'log-4', user: 'د. إميلي كارتر', userRole: 'doctor', action: 'عرض ملف المريض: فاطمة الزهراء', section: 'المرضى', timestamp: new Date(now.getTime() - 3 * 60 * 1000).toISOString() },
-    { id: 'log-5', user: 'سالم محمد', userRole: 'receptionist', action: 'سجل فاتورة للمريض: خالد المصري', section: 'الفواتير', timestamp: new Date(now.getTime() - 2 * 60 * 1000).toISOString() },
+    { id: 'log-1', user: 'علي عبدالله', userRole: 'admin', action: 'أضاف المستخدم الجديد: سالم محمد', section: 'المستخدمون', timestamp: subDays(now, 0.01).toISOString() },
+    { id: 'log-2', user: 'سالم محمد', userRole: 'receptionist', action: 'حجز موعدًا للمريض: أحمد الصالح', section: 'المواعيد', timestamp: subDays(now, 0.02).toISOString() },
+    { id: 'log-3', user: 'علي عبدالله', userRole: 'admin', action: 'حذف الطبيب: د. ويليام رودريغيز', section: 'الأطباء', timestamp: subDays(now, 0.03).toISOString() },
+    { id: 'log-4', user: 'د. إميلي كارتر', userRole: 'doctor', action: 'عرض ملف المريض: فاطمة الزهراء', section: 'المرضى', timestamp: subDays(now, 0.04).toISOString() },
+    { id: 'log-5', user: 'سالم محمد', userRole: 'receptionist', action: 'سجل فاتورة للمريض: خالد المصري', section: 'الفواتير', timestamp: subDays(now, 0.05).toISOString() },
 ];
     
 
