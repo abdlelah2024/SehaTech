@@ -1,4 +1,5 @@
 
+
 export interface Patient {
   id: string;
   name: string;
@@ -7,7 +8,7 @@ export interface Patient {
   phone: string;
   address: string;
   avatarUrl?: string;
-  createdAt: string; // Added for filtering new patients
+  createdAt?: any; // To support Firestore serverTimestamp
 }
 
 export interface Doctor {
@@ -48,7 +49,7 @@ export interface Transaction {
   id: string;
   patientId: string;
   patientName: string;
-  date: string;
+  date: any; // To support Firestore serverTimestamp
   amount: number;
   status: 'Success' | 'Failed';
   service?: string;
@@ -85,6 +86,3 @@ export interface AuditLog {
     section: string;
     timestamp: string;
 }
-    
-
-    

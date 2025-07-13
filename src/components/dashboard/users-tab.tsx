@@ -1,7 +1,8 @@
 
+
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -48,15 +49,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { mockUsers } from "@/lib/mock-data"
 import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { EditUserDialog } from "./edit-user-dialog"
 import { Edit, Trash2, Search } from "lucide-react"
-
-interface UsersTabProps {
-  // searchTerm removed as it's handled locally
-}
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
 
 const roleTranslations: { [key in UserRole]: string } = {
   admin: 'مدير',
@@ -64,20 +62,29 @@ const roleTranslations: { [key in UserRole]: string } = {
   doctor: 'طبيب',
 };
 
-export function UsersTab({ }: UsersTabProps) {
-  const [users, setUsers] = useState<User[]>(mockUsers)
+export function UsersTab() {
+  const [users, setUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [password, setPassword] = useState("") // Note: Firebase Auth handles user creation, this is for UI demo
   const [role, setRole] = useState<UserRole>("receptionist")
   const { toast } = useToast()
 
-  const handleAddUser = () => {
-    if (!name || !email || !password || !role) {
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const userList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setUsers(userList);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleAddUser = async () => {
+    if (!name || !email || !role) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -86,21 +93,19 @@ export function UsersTab({ }: UsersTabProps) {
       return;
     }
 
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name,
-      email,
-      role,
-    };
-
-    setUsers(prev => [newUser, ...prev]);
-
-    toast({
-      title: "تمت إضافة المستخدم",
-      description: `تمت إضافة ${name} إلى النظام.`,
-    });
-    
-    resetAddDialog();
+    // In a real app, you'd use Firebase Admin SDK on the backend to create a user.
+    // This is a client-side simulation.
+    try {
+      await addDoc(collection(db, "users"), { name, email, role });
+      toast({
+        title: "تمت إضافة المستخدم",
+        description: `تمت إضافة ${name} إلى النظام. سيحتاج إلى إكمال إعداد حسابه.`,
+      });
+      resetAddDialog();
+    } catch(e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "خطأ", description: "فشلت إضافة المستخدم."});
+    }
   };
   
   const resetAddDialog = () => {
@@ -111,17 +116,33 @@ export function UsersTab({ }: UsersTabProps) {
     setIsAddDialogOpen(false);
   }
 
-  const handleUserUpdated = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-    setUserToEdit(null);
+  const handleUserUpdated = async (updatedUser: User) => {
+    const { id, ...userData } = updatedUser;
+    const userRef = doc(db, "users", id);
+    try {
+        await updateDoc(userRef, userData);
+        toast({
+          title: "تم تحديث البيانات بنجاح",
+          description: `تم تحديث ملف المستخدم ${name}.`,
+        });
+        setUserToEdit(null);
+    } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "خطأ", description: "فشل تحديث المستخدم."});
+    }
   };
   
-  const handleUserDeleted = (userId: string) => {
-     setUsers(prev => prev.filter(u => u.id !== userId));
-     toast({
-        title: "تم الحذف بنجاح",
-        description: "تم حذف المستخدم من النظام.",
-     });
+  const handleUserDeleted = async (userId: string) => {
+     try {
+       await deleteDoc(doc(db, "users", userId));
+       toast({
+          title: "تم الحذف بنجاح",
+          description: "تم حذف المستخدم من النظام.",
+       });
+     } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "خطأ", description: "فشل حذف المستخدم."});
+     }
   };
 
   const filteredUsers = useMemo(() => {
@@ -159,10 +180,6 @@ export function UsersTab({ }: UsersTabProps) {
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="password" className="text-right">كلمة المرور</Label>
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">الدور</Label>

@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -20,27 +20,63 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { mockPatients, mockAppointments } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
 import type { Patient } from "@/lib/types"
 import { UserPlus, Search } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
-interface PatientsTabProps {
-  // No props needed as search is local
-}
-
-export function PatientsTab({ }: PatientsTabProps) {
+export function PatientsTab() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [patients, setPatients] = useState<Patient[]>(() => [...mockPatients].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [appointmentsCount, setAppointmentsCount] = useState<{ [key: string]: number }>({})
+  const { toast } = useToast();
   
-  const handlePatientCreated = (newPatient: Patient) => {
-    setPatients(prevPatients => [newPatient, ...prevPatients]);
-    // Optionally select the newly created patient
-    setSelectedPatient(newPatient);
+  useEffect(() => {
+    const q = query(collection(db, "patients"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const pats = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+      setPatients(pats);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "appointments"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const counts: { [key: string]: number } = {};
+        querySnapshot.forEach(doc => {
+            const patientId = doc.data().patientId;
+            counts[patientId] = (counts[patientId] || 0) + 1;
+        });
+        setAppointmentsCount(counts);
+    });
+    return () => unsubscribe();
+  }, []);
+  
+  const handlePatientCreated = async (newPatientData: Omit<Patient, 'id'>) => {
+    try {
+        const docRef = await addDoc(collection(db, "patients"), {
+            ...newPatientData,
+            createdAt: serverTimestamp(),
+        });
+        toast({
+            title: "تم إنشاء ملف المريض بنجاح!",
+        });
+        setSelectedPatient({ id: docRef.id, ...newPatientData });
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من إضافة المريض.",
+        });
+    }
   };
 
   const filteredPatients = useMemo(() => {
@@ -51,9 +87,7 @@ export function PatientsTab({ }: PatientsTabProps) {
   }, [patients, searchTerm]);
 
   const getPatientAppointmentCount = (patientId: string) => {
-    return mockAppointments.filter(
-      (appointment) => appointment.patientId === patientId
-    ).length
+    return appointmentsCount[patientId] || 0;
   }
 
   const getPrefilledData = () => {

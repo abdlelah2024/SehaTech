@@ -1,6 +1,26 @@
 
-import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation, AuditLog } from "./types";
-import { getPatientInitials } from "./utils";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, writeBatch, doc } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import 'dotenv/config'
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Mock data (copied from the old mock-data.ts)
 import { subDays, set } from 'date-fns';
 
 const now = new Date(2025, 6, 13, 10, 30, 0); // Use a fixed date for deterministic mock data
@@ -10,7 +30,14 @@ const patientNames = [
   'نور الهاشمي', 'محمد الخالدي', 'سارة المغربي', 'علي التميمي', 'مريم الأنصاري'
 ];
 
-export const mockPatients: Patient[] = patientNames.map((name, index) => ({
+const getPatientInitials = (name) => {
+  const names = name.split(" ")
+  return names.length > 1
+    ? `${names[0][0]}${names[names.length - 1][0]}`
+    : names[0]?.[0] || ""
+}
+
+const mockPatients = patientNames.map((name, index) => ({
   id: `patient-${index + 1}`,
   name: name,
   dob: `${1980 + (index * 2)}-${(index % 12) + 1}-${(index % 28) + 1}`,
@@ -18,17 +45,16 @@ export const mockPatients: Patient[] = patientNames.map((name, index) => ({
   phone: `777-010${index + 1}`,
   address: `شارع ${index + 1}، المدينة`,
   avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(name)}`,
-  createdAt: subDays(now, index * 10).toISOString(), // Simulate patient creation date
+  createdAt: subDays(now, index * 10).toISOString(),
 }));
 
-// Function to get a future date string
-const getFutureDate = (daysToAdd: number): string => {
+const getFutureDate = (daysToAdd) => {
     const date = new Date(now);
     date.setDate(date.getDate() + daysToAdd);
     return date.toISOString().split('T')[0];
 };
 
-export const mockDoctors: Doctor[] = [
+const mockDoctors = [
   {
     id: 'doctor-1',
     name: 'إميلي كارتر',
@@ -94,8 +120,7 @@ export const mockDoctors: Doctor[] = [
   }
 ];
 
-
-export const mockAppointments: Appointment[] = [
+const mockAppointments = [
   {
     id: 'appt-1',
     patientId: 'patient-1',
@@ -166,7 +191,6 @@ export const mockAppointments: Appointment[] = [
     dateTime: subDays(now, 10).toISOString(),
     status: 'Completed',
   },
-   // Add past appointments for patient 1 with doctor 1 to test suggestions
   {
     id: 'appt-8',
     patientId: 'patient-1',
@@ -199,34 +223,8 @@ export const mockAppointments: Appointment[] = [
   }
 ].sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
-export const mockRecentActivities: RecentActivity[] = [
-  {
-    id: 'act-1',
-    actor: 'أحمد الصالح',
-    action: 'حجز موعداً جديداً مع د. إميلي كارتر.',
-    timestamp: 'قبل دقيقتين',
-  },
-  {
-    id: 'act-2',
-    actor: 'فاطمة الزهراء',
-    action: 'أكملت موعدها مع د. بنيامين لي.',
-    timestamp: 'قبل ساعة',
-  },
-  {
-    id: 'act-3',
-    actor: 'المدير',
-    action: 'قام بتحديث ملف المريضة مريم الأنصاري.',
-    timestamp: 'قبل 3 ساعات',
-  },
-  {
-    id: 'act-4',
-    actor: 'د. أوليفيا جارسيا',
-    action: 'أضافت مواعيد متاحة جديدة للأسبوع القادم.',
-    timestamp: 'قبل يوم',
-  },
-];
 
-export const mockTransactions: Transaction[] = [
+const mockTransactions = [
   { id: 'txn-1', patientId: 'patient-2', patientName: mockPatients[1].name, date: subDays(now, 1).toISOString(), amount: 6000, status: 'Success', service: 'فحص جلدي' },
   { id: 'txn-2', patientId: 'patient-1', patientName: mockPatients[0].name, date: subDays(now, 5).toISOString(), amount: 7500, status: 'Success', service: 'زيارة متابعة' },
   { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: subDays(now, 10).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
@@ -235,39 +233,75 @@ export const mockTransactions: Transaction[] = [
   { id: 'txn-6', patientId: 'patient-6', patientName: mockPatients[5].name, date: now.toISOString(), amount: 7500, status: 'Success', service: 'استشارة' },
 ];
 
-export const mockUsers: User[] = [
-  { id: 'user-1', name: 'علي عبدالله', email: 'ali@example.com', role: 'admin', status: 'online' },
+const mockUsers = [
+  // The admin user is created separately below
   { id: 'user-2', name: 'سالم محمد', email: 'salem@example.com', role: 'receptionist', status: 'offline' },
   { id: 'user-3', name: 'د. إميلي كارتر', email: 'emily.carter@example.com', role: 'doctor', status: 'online' },
   { id: 'user-4', name: 'د. بنيامين لي', email: 'ben.lee@example.com', role: 'doctor', status: 'offline' },
 ];
 
-export const mockConversations: Conversation[] = [
-  {
-    userId: 'user-2', // سالم محمد
-    messages: [
-      { id: 'msg-1', senderId: 'user-1', receiverId: 'user-2', text: 'مرحباً سالم، هل يمكنك مراجعة جدول مواعيد د. إميلي لهذا اليوم؟', timestamp: subDays(now, 0.05).toISOString() },
-      { id: 'msg-2', senderId: 'user-2', receiverId: 'user-1', text: 'أهلاً علي. بالتأكيد، لحظة من فضلك.', timestamp: subDays(now, 0.04).toISOString() },
-      { id: 'msg-3', senderId: 'user-2', receiverId: 'user-1', text: 'الجدول يبدو ممتلئاً بعد الظهر، ولكن هناك فراغ في الساعة 11 صباحاً.', timestamp: subDays(now, 0.03).toISOString() },
-      { id: 'msg-4', senderId: 'user-1', receiverId: 'user-2', text: 'ممتاز، شكراً جزيلاً لك.', timestamp: subDays(now, 0.02).toISOString() },
-    ]
-  },
-  {
-    userId: 'user-3', // د. إميلي كارتر
-    messages: [
-       { id: 'msg-5', senderId: 'user-1', receiverId: 'user-3', text: 'مرحباً د. إميلي، هل يمكنكِ إلقاء نظرة على نتائج المريض أحمد الصالح؟', timestamp: subDays(now, 0.1).toISOString() },
-       { id: 'msg-6', senderId: 'user-3', receiverId: 'user-1', text: 'أهلاً، سأقوم بذلك حالاً.', timestamp: subDays(now, 0.09).toISOString() },
-    ]
-  }
-]
 
-export const mockAuditLogs: AuditLog[] = [
-    { id: 'log-1', user: 'علي عبدالله', userRole: 'admin', action: 'أضاف المستخدم الجديد: سالم محمد', section: 'المستخدمون', timestamp: subDays(now, 0.01).toISOString() },
-    { id: 'log-2', user: 'سالم محمد', userRole: 'receptionist', action: 'حجز موعدًا للمريض: أحمد الصالح', section: 'المواعيد', timestamp: subDays(now, 0.02).toISOString() },
-    { id: 'log-3', user: 'علي عبدالله', userRole: 'admin', action: 'حذف الطبيب: د. ويليام رودريغيز', section: 'الأطباء', timestamp: subDays(now, 0.03).toISOString() },
-    { id: 'log-4', user: 'د. إميلي كارتر', userRole: 'doctor', action: 'عرض ملف المريض: فاطمة الزهراء', section: 'المرضى', timestamp: subDays(now, 0.04).toISOString() },
-    { id: 'log-5', user: 'سالم محمد', userRole: 'receptionist', action: 'سجل فاتورة للمريض: خالد المصري', section: 'الفواتير', timestamp: subDays(now, 0.05).toISOString() },
-];
-    
+async function seedCollection(collectionName, data) {
+    const batch = writeBatch(db);
+    const collectionRef = collection(db, collectionName);
+    console.log(`Starting to seed ${collectionName}...`);
+    data.forEach((item) => {
+        const docRef = doc(collectionRef, item.id);
+        batch.set(docRef, item);
+    });
 
-    
+    await batch.commit();
+    console.log(`Successfully seeded ${data.length} documents into ${collectionName}.`);
+}
+
+async function createAdminUser() {
+    const email = "asd19082@gmail.com";
+    const password = "12345678";
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("Successfully created admin user:", userCredential.user.uid);
+        
+        // Now store the user's role in Firestore
+        const userRef = doc(db, "users", userCredential.user.uid);
+        await setDoc(userRef, {
+            name: "المدير المسؤول",
+            email: email,
+            role: "admin",
+            status: "online",
+        });
+        console.log("Successfully created admin user document in Firestore.");
+
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            console.log('Admin user already exists.');
+        } else {
+            console.error("Error creating admin user:", error);
+        }
+    }
+}
+
+
+async function main() {
+    try {
+        console.log('Starting database seeding process...');
+        
+        // Create the admin user first
+        await createAdminUser();
+
+        // Seed other collections
+        await seedCollection('patients', mockPatients);
+        await seedCollection('doctors', mockDoctors);
+        await seedCollection('appointments', mockAppointments);
+        await seedCollection('transactions', mockTransactions);
+        await seedCollection('users', mockUsers);
+
+        console.log('Database seeding completed successfully!');
+        process.exit(0);
+
+    } catch (error) {
+        console.error("Error during database seeding:", error);
+        process.exit(1);
+    }
+}
+
+main();

@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { mockAppointments, mockDoctors } from "@/lib/mock-data"
 import { AppointmentScheduler } from "../appointment-scheduler"
-import type { Appointment } from "@/lib/types"
+import type { Appointment, Doctor } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -42,10 +41,8 @@ import { ar } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { LocalizedDateTime } from "../localized-date-time"
 import { useToast } from "@/hooks/use-toast"
-
-interface AppointmentsTabProps {
-  // searchTerm removed as it's now handled locally
-}
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, doc, updateDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore"
 
 const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
 const statusTranslations: { [key: string]: string } = {
@@ -63,22 +60,52 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
 };
 
 
-export function AppointmentsTab({ }: AppointmentsTabProps) {
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+export function AppointmentsTab({ }: {}) {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [doctors, setDoctors] = useState<Doctor[]>([])
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
   const { toast } = useToast()
 
-  const handleAppointmentCreated = (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
-    const newAppointment: Appointment = {
-        ...newAppointmentData,
-        id: `appt-${Date.now()}`,
-        status: 'Scheduled',
-    };
+  useEffect(() => {
+    const q = query(collection(db, "appointments"), orderBy("dateTime", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const appts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+      setAppointments(appts);
+    });
+    return () => unsubscribe();
+  }, []);
 
-    setAppointments(prev => [newAppointment, ...prev].sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()));
+  useEffect(() => {
+    const q = query(collection(db, "doctors"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+      setDoctors(docs);
+    });
+    return () => unsubscribe();
+  }, []);
+
+
+  const handleAppointmentCreated = async (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
+     try {
+        await addDoc(collection(db, "appointments"), {
+            ...newAppointmentData,
+            status: 'Scheduled',
+        });
+        toast({
+            title: "تم حجز الموعد بنجاح!",
+            description: `تم حجز موعد جديد.`,
+        });
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من حجز الموعد.",
+        });
+    }
   };
   
   const handleClearFilters = () => {
@@ -88,16 +115,22 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
     setFilterDoctor("all");
   };
 
-  const handleStatusChange = (appointmentId: string, newStatus: Appointment['status']) => {
-    setAppointments(prev =>
-      prev.map(appt =>
-        appt.id === appointmentId ? { ...appt, status: newStatus } : appt
-      )
-    );
-    toast({
-        title: "تم تحديث الحالة",
-        description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
-    })
+  const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
+    const appointmentRef = doc(db, "appointments", appointmentId);
+    try {
+        await updateDoc(appointmentRef, { status: newStatus });
+        toast({
+            title: "تم تحديث الحالة",
+            description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
+        })
+    } catch (e) {
+         console.error("Error updating document: ", e);
+         toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من تحديث حالة الموعد.",
+        });
+    }
   };
 
 
@@ -174,7 +207,7 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الأطباء</SelectItem>
-                  {mockDoctors.map(doctor => (
+                  {doctors.map(doctor => (
                     <SelectItem key={doctor.id} value={doctor.id}>د. {doctor.name}</SelectItem>
                   ))}
                 </SelectContent>

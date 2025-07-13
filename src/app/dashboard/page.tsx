@@ -16,6 +16,10 @@ import {
   MessageSquare,
   History,
 } from "lucide-react"
+import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,12 +53,34 @@ import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "users" | "audit-log";
 
-// In a real app, this would come from an authentication context
-const currentUserRole: UserRole = 'admin';
 
 export default function Dashboard() {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const router = useRouter();
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') as TabValue || 'dashboard';
+
+  // In a real app, this would come from the user's document in Firestore
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('admin');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+        // Here you would typically fetch the user's role from Firestore
+        // For now, we'll keep it static.
+        // const userDoc = await getDoc(doc(db, "users", user.uid));
+        // if (userDoc.exists()) {
+        //   setCurrentUserRole(userDoc.data().role);
+        // }
+      } else {
+        router.push('/');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -84,6 +110,11 @@ export default function Dashboard() {
       setActiveTab('dashboard');
     }
   }, [searchParams, accessibleLinks]);
+  
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TabValue);
@@ -140,6 +171,13 @@ export default function Dashboard() {
     setIsAppointmentModalOpen(false);
   }
 
+  if (!user) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p>جار التحميل...</p>
+        </div>
+    )
+  }
 
   return (
     <>
@@ -198,12 +236,12 @@ export default function Dashboard() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>حسابي</DropdownMenuLabel>
+              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>الإعدادات</DropdownMenuItem>
               <DropdownMenuItem>الدعم</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>تسجيل الخروج</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
@@ -263,5 +301,3 @@ export default function Dashboard() {
     </>
   )
 }
-
-    

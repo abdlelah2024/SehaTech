@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { mockAppointments, mockTransactions } from "@/lib/mock-data"
 import type { Patient, Appointment, Transaction } from "@/lib/types"
 import { getPatientInitials } from "@/lib/utils"
 import { Cake, VenetianMask, Phone, Home, Sparkles } from "lucide-react"
@@ -29,6 +29,8 @@ import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Skeleton } from "./ui/skeleton"
 import { LocalizedDateTime } from "./localized-date-time"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore"
 
 interface PatientDetailsProps {
   patient: Patient
@@ -46,18 +48,35 @@ const statusTranslations: { [key: string]: string } = {
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
   const [summary, setSummary] = useState('');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([]);
+  const [patientTransactions, setPatientTransactions] = useState<Transaction[]>([]);
 
-  const patientAppointments = mockAppointments.filter(
-    (appointment) => appointment.patientId === patient.id
-  ).sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
+  useEffect(() => {
+      if (!patient || !isOpen) return;
 
-  const patientTransactions = mockTransactions.filter(
-    (transaction) => transaction.patientId === patient.id
-  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", patient.id), orderBy("dateTime", "desc"));
+      const appointmentsUnsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
+          const appts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Appointment);
+          setPatientAppointments(appts);
+      });
+
+      const transactionsQuery = query(collection(db, "transactions"), where("patientId", "==", patient.id), orderBy("date", "desc"));
+      const transactionsUnsubscribe = onSnapshot(transactionsQuery, (snapshot) => {
+          const trans = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Transaction);
+          setPatientTransactions(trans);
+      });
+
+      return () => {
+          appointmentsUnsubscribe();
+          transactionsUnsubscribe();
+      };
+
+  }, [patient, isOpen]);
+
 
   useEffect(() => {
     const generateSummary = async () => {
-      if (!isOpen) return;
+      if (!isOpen || !patient) return;
       setIsLoadingSummary(true);
       setSummary('');
       try {
@@ -84,7 +103,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
       }
     };
 
-    if (isOpen) {
+    if (isOpen && patientAppointments.length > 0) {
       generateSummary();
     }
   }, [patient, isOpen, patientAppointments]);
@@ -101,6 +120,8 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     }
     return age;
   }
+  
+  if (!patient) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -186,7 +207,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                </TableCell>
                                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                                <TableCell>
-                                 <LocalizedDateTime dateTime={transaction.date} />
+                                 <LocalizedDateTime dateTime={transaction.date.toDate().toISOString()} />
                                 </TableCell>
                                <TableCell>{transaction.service}</TableCell>
                             </TableRow>

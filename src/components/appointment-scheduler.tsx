@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -28,17 +29,18 @@ import { CalendarIcon, Sparkles, Loader2, Lightbulb } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { mockPatients, mockDoctors, mockAppointments } from "@/lib/mock-data"
 import { useToast } from "@/hooks/use-toast"
 import { suggestOptimalAppointmentSlots, SuggestOptimalAppointmentSlotsInput, SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { Appointment, Patient, Doctor } from "@/lib/types"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, where, getDocs, orderBy } from "firebase/firestore"
 
 interface AppointmentSchedulerProps {
   doctorId?: string;
   selectedPatientId?: string;
   onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
-  onPatientCreated?: (patient: Patient) => void;
+  onPatientCreated?: (patient: Omit<Patient, 'id'>) => void;
   context?: 'new-patient' | 'new-appointment';
   prefilledData?: { name?: string; phone?: string };
 }
@@ -59,11 +61,27 @@ export function AppointmentScheduler({
   const [isSuggestingSlots, setIsSuggestingSlots] = useState(false)
   const [suggestedSlots, setSuggestedSlots] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>([])
   const { toast } = useToast()
+  
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   const [newPatientName, setNewPatientName] = useState("")
   const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientAddress, setNewPatientAddress] = useState("")
+  
+  useEffect(() => {
+    const patientsUnsub = onSnapshot(query(collection(db, "patients")), (snap) => {
+        setPatients(snap.docs.map(doc => ({id: doc.id, ...doc.data()} as Patient)));
+    });
+    const doctorsUnsub = onSnapshot(query(collection(db, "doctors")), (snap) => {
+        setDoctors(snap.docs.map(doc => ({id: doc.id, ...doc.data()} as Doctor)));
+    });
+    return () => {
+        patientsUnsub();
+        doctorsUnsub();
+    }
+  }, []);
   
   useEffect(() => {
     setSelectedDoctorId(doctorId);
@@ -74,7 +92,7 @@ export function AppointmentScheduler({
   }, [initialSelectedPatientId]);
 
   useEffect(() => {
-    if (context === 'new-patient') {
+    if (context === 'new-patient' && open) {
       setNewPatientName(prefilledData.name || "");
       setNewPatientPhone(prefilledData.phone || "");
     }
@@ -95,15 +113,23 @@ export function AppointmentScheduler({
     setSuggestedSlots([]);
     
     try {
-      const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
+      const doctor = doctors.find(d => d.id === selectedDoctorId);
       if (!doctor) throw new Error("Doctor not found");
+
+      const appointmentsQuery = query(collection(db, "appointments"), 
+          where("patientId", "==", selectedPatientId), 
+          where("doctorId", "==", selectedDoctorId)
+      );
+      const querySnapshot = await getDocs(appointmentsQuery);
+      const appointmentHistory = querySnapshot.docs.map(doc => {
+          const data = doc.data() as Appointment;
+          return { date: format(new Date(data.dateTime), 'yyyy-MM-dd'), time: format(new Date(data.dateTime), 'HH:mm') }
+      });
 
       const input: SuggestOptimalAppointmentSlotsInput = {
         patientId: selectedPatientId,
         doctorId: selectedDoctorId,
-        appointmentHistory: mockAppointments
-          .filter(a => a.patientId === selectedPatientId && a.doctorId === selectedDoctorId)
-          .map(a => ({ date: format(new Date(a.dateTime), 'yyyy-MM-dd'), time: format(new Date(a.dateTime), 'HH:mm') })),
+        appointmentHistory,
         doctorAvailability: doctor.availability,
       };
 
@@ -141,8 +167,8 @@ export function AppointmentScheduler({
       return;
     }
 
-    const patient = mockPatients.find(p => p.id === selectedPatientId);
-    const doctor = mockDoctors.find(d => d.id === selectedDoctorId);
+    const patient = patients.find(p => p.id === selectedPatientId);
+    const doctor = doctors.find(d => d.id === selectedDoctorId);
 
     if (patient && doctor && onAppointmentCreated) {
         onAppointmentCreated({
@@ -152,10 +178,6 @@ export function AppointmentScheduler({
             doctorName: `د. ${doctor.name}`,
             doctorSpecialty: doctor.specialty,
             dateTime: date.toISOString(),
-        });
-        toast({
-            title: "تم حجز الموعد!",
-            description: `تم حجز موعد لـ ${patient.name} مع د. ${doctor.name}.`,
         });
         resetAndClose();
     }
@@ -172,8 +194,7 @@ export function AppointmentScheduler({
     }
 
     if (onPatientCreated) {
-        const newPatient: Patient = {
-            id: `patient-${Date.now()}`,
+        const newPatient: Omit<Patient, 'id'> = {
             name: newPatientName,
             dob: format(newPatientDob, "yyyy-MM-dd"),
             gender: 'آخر',
@@ -182,25 +203,22 @@ export function AppointmentScheduler({
             avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(newPatientName)}`
         };
         onPatientCreated(newPatient);
-        toast({
-            title: "تم إنشاء ملف المريض!",
-            description: `تم إنشاء ملف لـ ${newPatientName}.`,
-        });
         resetAndClose();
     }
+  }
+  
+  const getPatientInitials = (name: string) => {
+    if(!name) return "";
+    const names = name.split(" ")
+    return names.length > 1
+      ? `${names[0][0]}${names[names.length - 1][0]}`
+      : names[0]?.[0] || ""
   }
 
   const getButtonText = () => {
     if (context === 'new-patient') return 'مريض جديد';
     if (doctorId || initialSelectedPatientId) return 'حجز موعد';
     return 'موعد جديد';
-  }
-  
-  const getPatientInitials = (name: string) => {
-    const names = name.split(" ")
-    return names.length > 1
-      ? `${names[0][0]}${names[names.length - 1][0]}`
-      : names[0]?.[0] || ""
   }
   
   const resetAndClose = () => {
@@ -291,7 +309,7 @@ export function AppointmentScheduler({
                   <SelectValue placeholder="اختر مريضاً" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -301,10 +319,10 @@ export function AppointmentScheduler({
               </Label>
               <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId} disabled={isDoctorSelectionDisabled}>
                 <SelectTrigger id="doctor" className="col-span-3">
-                  <SelectValue placeholder={isDoctorSelectionDisabled ? `د. ${mockDoctors.find(d => d.id === doctorId)?.name}` : "اختر طبيباً"} />
+                  <SelectValue placeholder={isDoctorSelectionDisabled ? `د. ${doctors.find(d => d.id === doctorId)?.name}` : "اختر طبيباً"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockDoctors.map(d => <SelectItem key={d.id} value={d.id}>د. {d.name} ({d.specialty})</SelectItem>)}
+                  {doctors.map(d => <SelectItem key={d.id} value={d.id}>د. {d.name} ({d.specialty})</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -12,8 +13,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { mockTransactions, mockPatients, mockAppointments } from "@/lib/mock-data"
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Patient, Appointment } from "@/lib/types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -36,13 +36,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { suggestBillingService, SuggestBillingServiceInput } from "@/ai/flows/suggest-billing-service";
 import { Sparkles, Loader2, Search } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, where, getDocs } from "firebase/firestore"
 
-interface BillingTabProps {
-  // searchTerm removed as it's handled locally
-}
-
-export function BillingTab({ }: BillingTabProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+export function BillingTab({ }: {}) {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
@@ -50,8 +49,26 @@ export function BillingTab({ }: BillingTabProps) {
   const [service, setService] = useState("");
   const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const q = query(collection(db, "transactions"), orderBy("date", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const trans = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+      setTransactions(trans);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const handleRecordTransaction = () => {
+  useEffect(() => {
+    const q = query(collection(db, "patients"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const pats = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+      setPatients(pats);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleRecordTransaction = async () => {
     if (!selectedPatientId || !amount || !service) {
       toast({
         variant: "destructive",
@@ -61,27 +78,27 @@ export function BillingTab({ }: BillingTabProps) {
       return;
     }
 
-    const patient = mockPatients.find(p => p.id === selectedPatientId);
+    const patient = patients.find(p => p.id === selectedPatientId);
     if (!patient) return;
 
-    const newTransaction: Transaction = {
-      id: `txn-${Date.now()}`,
-      patientId: selectedPatientId,
-      patientName: patient.name,
-      date: new Date().toISOString(),
-      amount: parseFloat(amount),
-      status: 'Success',
-      service,
-    };
-
-    setTransactions(prev => [newTransaction, ...prev]);
-
-    toast({
-      title: "تم تسجيل الفاتورة",
-      description: `تم تسجيل فاتورة بمبلغ ${amount} لـ ${patient.name}.`,
-    });
-
-    setIsDialogOpen(false);
+    try {
+        await addDoc(collection(db, "transactions"), {
+            patientId: selectedPatientId,
+            patientName: patient.name,
+            date: serverTimestamp(),
+            amount: parseFloat(amount),
+            status: 'Success',
+            service,
+        });
+        toast({
+          title: "تم تسجيل الفاتورة",
+          description: `تم تسجيل فاتورة بمبلغ ${amount} لـ ${patient.name}.`,
+        });
+        setIsDialogOpen(false);
+    } catch(e) {
+        console.error("Error adding transaction:", e);
+        toast({ variant: "destructive", title: "خطأ", description: "فشل تسجيل الفاتورة." });
+    }
   };
 
   const handleSuggestService = async () => {
@@ -96,14 +113,17 @@ export function BillingTab({ }: BillingTabProps) {
 
     setIsSuggesting(true);
     try {
-      const recentAppointments = mockAppointments
-        .filter(a => a.patientId === selectedPatientId)
-        .sort((a,b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
-        .map(a => ({
-          doctorSpecialty: a.doctorSpecialty,
-          dateTime: a.dateTime,
-          status: a.status,
-        }));
+      const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", selectedPatientId), orderBy("dateTime", "desc"));
+      const querySnapshot = await getDocs(appointmentsQuery);
+
+      const recentAppointments = querySnapshot.docs.map(doc => {
+          const data = doc.data() as Appointment;
+          return {
+            doctorSpecialty: data.doctorSpecialty,
+            dateTime: data.dateTime,
+            status: data.status,
+          }
+      });
       
       const input: SuggestBillingServiceInput = {
         patientId: selectedPatientId,
@@ -175,7 +195,7 @@ export function BillingTab({ }: BillingTabProps) {
                       <SelectValue placeholder="اختر مريضاً" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                      {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -231,7 +251,7 @@ export function BillingTab({ }: BillingTabProps) {
                   <TableCell className="font-mono text-xs" dir="ltr">{transaction.id}</TableCell>
                   <TableCell>{transaction.patientName}</TableCell>
                   <TableCell>{transaction.service}</TableCell>
-                  <TableCell>{new Date(transaction.date).toLocaleDateString('ar-EG')}</TableCell>
+                  <TableCell>{transaction.date ? new Date(transaction.date.seconds * 1000).toLocaleDateString('ar-EG') : 'جارٍ...'}</TableCell>
                   <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                   <TableCell>
                      <Badge variant={

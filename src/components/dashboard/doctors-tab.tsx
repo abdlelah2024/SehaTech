@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockDoctors } from "@/lib/mock-data"
 import Image from "next/image"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { X, Calendar, Edit, Trash2, Repeat, Search } from "lucide-react"
@@ -38,17 +37,24 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
 
-interface DoctorsTabProps {
-  // No props needed as search is local
-}
-
-export function DoctorsTab({ }: DoctorsTabProps) {
+export function DoctorsTab() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(db, "doctors"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+      setDoctors(docs);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const specialties = useMemo(() => [...new Set(doctors.map((d) => d.specialty))], [doctors]);
 
@@ -69,21 +75,58 @@ export function DoctorsTab({ }: DoctorsTabProps) {
     setSelectedSpecialty("all")
   }
   
-  const handleDoctorCreated = (newDoctor: Doctor) => {
-    setDoctors(prev => [newDoctor, ...prev]);
+  const handleDoctorCreated = async (newDoctor: Omit<Doctor, 'id'>) => {
+    try {
+      await addDoc(collection(db, "doctors"), newDoctor);
+      toast({
+        title: "تمت إضافة الطبيب بنجاح",
+        description: `تم إضافة د. ${newDoctor.name} إلى النظام.`,
+      });
+    } catch (e) {
+      console.error("Error adding document: ", e);
+      toast({
+        variant: "destructive",
+        title: "حدث خطأ!",
+        description: "لم نتمكن من إضافة الطبيب.",
+      });
+    }
   };
 
-  const handleDoctorUpdated = (updatedDoctor: Doctor) => {
-    setDoctors(prev => prev.map(d => d.id === updatedDoctor.id ? updatedDoctor : d));
-    setDoctorToEdit(null);
+  const handleDoctorUpdated = async (updatedDoctor: Doctor) => {
+    const { id, ...doctorData } = updatedDoctor;
+    const doctorRef = doc(db, "doctors", id);
+    try {
+      await updateDoc(doctorRef, doctorData);
+      toast({
+        title: "تم تحديث البيانات بنجاح",
+        description: `تم تحديث ملف د. ${updatedDoctor.name}.`,
+      });
+      setDoctorToEdit(null);
+    } catch (e) {
+      console.error("Error updating document: ", e);
+       toast({
+        variant: "destructive",
+        title: "حدث خطأ!",
+        description: "لم نتمكن من تحديث بيانات الطبيب.",
+      });
+    }
   };
   
-  const handleDoctorDeleted = (doctorId: string) => {
-     setDoctors(prev => prev.filter(d => d.id !== doctorId));
-     toast({
-        title: "تم الحذف بنجاح",
-        description: "تم حذف ملف الطبيب من النظام.",
-     });
+  const handleDoctorDeleted = async (doctorId: string) => {
+     try {
+       await deleteDoc(doc(db, "doctors", doctorId));
+       toast({
+          title: "تم الحذف بنجاح",
+          description: "تم حذف ملف الطبيب من النظام.",
+       });
+     } catch(e) {
+        console.error("Error deleting document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من حذف الطبيب.",
+        });
+     }
   };
 
   const showClearButton = searchTerm || selectedSpecialty !== "all"

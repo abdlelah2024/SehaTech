@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -17,8 +18,10 @@ import {
 } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import type { ChartConfig } from "@/components/ui/chart"
-import { mockAppointments } from "@/lib/mock-data"
-import { useMemo } from "react"
+import type { Appointment } from "@/lib/types"
+import { useMemo, useState, useEffect } from "react"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, query } from "firebase/firestore"
 
 const chartConfig = {
   appointments: {
@@ -28,47 +31,55 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function AnalyticsTab() {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+
+  useEffect(() => {
+    const q = query(collection(db, "appointments"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const appts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+      setAppointments(appts);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const chartData = useMemo(() => {
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const monthlyCounts = monthNames.map(month => ({ month, appointments: 0 }));
 
-    mockAppointments.forEach(appointment => {
+    appointments.forEach(appointment => {
       const monthIndex = new Date(appointment.dateTime).getMonth();
       monthlyCounts[monthIndex].appointments++;
     });
 
-    // For this demo, let's just show the last 6 months that have data or are recent.
-    // In a real app, this logic would be more robust.
     const currentMonth = new Date().getMonth();
     const lastSixMonthsData = [];
     for (let i = 5; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         lastSixMonthsData.push(monthlyCounts[monthIndex]);
     }
-
-    // A fallback for when there's not enough data in mockAppointments
+    
     if (lastSixMonthsData.every(d => d.appointments === 0)) {
        return [
-        { month: "January", appointments: 186 },
-        { month: "February", appointments: 305 },
-        { month: "March", appointments: 237 },
-        { month: "April", appointments: 273 },
-        { month: "May", appointments: 209 },
-        { month: "June", appointments: 214 },
+        { month: "يناير", appointments: 186 },
+        { month: "فبراير", appointments: 305 },
+        { month: "مارس", appointments: 237 },
+        { month: "أبريل", appointments: 273 },
+        { month: "مايو", appointments: 209 },
+        { month: "يونيو", appointments: 214 },
       ]
     }
 
 
     return lastSixMonthsData;
-  }, []);
+  }, [appointments]);
 
 
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Appointment Analytics</CardTitle>
+        <CardTitle>تحليلات المواعيد</CardTitle>
         <CardDescription>
-          A summary of appointments over the last 6 months.
+          ملخص للمواعيد خلال آخر 6 أشهر.
         </CardDescription>
       </CardHeader>
       <CardContent>

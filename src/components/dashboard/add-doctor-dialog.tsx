@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState } from "react"
@@ -15,11 +16,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
 
 interface AddDoctorDialogProps {
-  onDoctorCreated: (doctor: Doctor) => void;
+  onDoctorCreated: (doctor: Omit<Doctor, 'id'>) => void;
 }
 
 const weekDays = [
@@ -39,7 +39,6 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
   const [price, setPrice] = useState("");
   const [returnDays, setReturnDays] = useState("");
   const [availableDays, setAvailableDays] = useState<string[]>([]);
-  const { toast } = useToast();
 
   const handleDayChange = (dayId: string, checked: boolean) => {
     setAvailableDays(prev =>
@@ -48,17 +47,14 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
   };
 
   const handleCreateDoctor = () => {
+    // Basic validation
     if (!name || !specialty || !price || !returnDays || availableDays.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "معلومات ناقصة",
-        description: "الرجاء تعبئة جميع الحقول المطلوبة.",
-      });
+      // In a real app, you'd use a form library like react-hook-form for better validation.
+      alert("الرجاء تعبئة جميع الحقول المطلوبة.");
       return;
     }
 
-    const newDoctor: Doctor = {
-      id: `doctor-${Date.now()}`,
+    const newDoctor: Omit<Doctor, 'id'> = {
       name,
       specialty,
       servicePrice: parseFloat(price),
@@ -67,15 +63,10 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
       image: `https://placehold.co/100x100.png?text=${name.charAt(0)}`,
       nextAvailable: 'غداً، 10:00 ص', // Placeholder
       isAvailableToday: true, // Placeholder
-      availability: [], // Placeholder
+      availability: [], // Placeholder, should be managed separately
     };
 
     onDoctorCreated(newDoctor);
-
-    toast({
-      title: "تمت إضافة الطبيب بنجاح",
-      description: `تم إضافة د. ${name} إلى النظام.`,
-    });
     
     // Reset form and close dialog
     setName("");
