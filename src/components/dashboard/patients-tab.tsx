@@ -13,6 +13,17 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Card,
   CardContent,
   CardDescription,
@@ -20,19 +31,29 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
 import type { Patient } from "@/lib/types"
-import { UserPlus, Search } from "lucide-react"
+import { EditPatientDialog } from "./edit-patient-dialog"
+import { UserPlus, Search, Edit, Trash2, X } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 export function PatientsTab() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [filterGender, setFilterGender] = useState("all")
+  const [selectedPatientForProfile, setSelectedPatientForProfile] = useState<Patient | null>(null)
+  const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
   const [appointmentsCount, setAppointmentsCount] = useState<{ [key: string]: number }>({})
   const { toast } = useToast();
@@ -68,7 +89,7 @@ export function PatientsTab() {
         toast({
             title: "تم إنشاء ملف المريض بنجاح!",
         });
-        setSelectedPatient({ id: docRef.id, ...newPatientData });
+        setSelectedPatientForProfile({ id: docRef.id, ...newPatientData });
     } catch (e) {
         console.error("Error adding document: ", e);
         toast({
@@ -79,21 +100,51 @@ export function PatientsTab() {
     }
   };
 
+  const handlePatientUpdated = async (updatedPatient: Patient) => {
+    const { id, ...patientData } = updatedPatient;
+    if (!id) return;
+    const patientRef = doc(db, "patients", id);
+    try {
+      await updateDoc(patientRef, patientData);
+      toast({
+        title: "تم تحديث البيانات بنجاح",
+        description: `تم تحديث ملف المريض ${updatedPatient.name}.`,
+      });
+      setSelectedPatientForEdit(null);
+    } catch (e) {
+      console.error("Error updating document: ", e);
+      toast({ variant: "destructive", title: "خطأ", description: "لم نتمكن من تحديث بيانات المريض." });
+    }
+  };
+
+  const handlePatientDeleted = async (patientId: string) => {
+    try {
+      await deleteDoc(doc(db, "patients", patientId));
+      toast({ title: "تم الحذف بنجاح", description: "تم حذف ملف المريض من النظام." });
+    } catch (e) {
+      console.error("Error deleting document: ", e);
+      toast({ variant: "destructive", title: "خطأ!", description: "لم نتمكن من حذف المريض." });
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("")
+    setFilterGender("all")
+  }
+
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (patient.phone && patient.phone.includes(searchTerm))
+      (patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.phone && patient.phone.includes(searchTerm))) &&
+      (filterGender === "all" || patient.gender === filterGender)
     )
-  }, [patients, searchTerm]);
+  }, [patients, searchTerm, filterGender]);
 
   const getPatientAppointmentCount = (patientId: string) => {
     return appointmentsCount[patientId] || 0;
   }
 
-  const getPrefilledData = () => {
-     const isPhone = /^\d+$/.test(searchTerm);
-     return isPhone ? { phone: searchTerm } : { name: searchTerm };
-  }
+  const showClearButton = searchTerm || filterGender !== "all";
 
   return (
     <>
@@ -103,10 +154,16 @@ export function PatientsTab() {
              <div>
                 <CardTitle>سجلات المرضى</CardTitle>
                 <CardDescription>
-                  ابحث بالاسم أو رقم الهاتف للوصول السريع للملفات أو لإضافة مريض جديد.
+                  عرض، إضافة، وتعديل سجلات المرضى في النظام.
                 </CardDescription>
               </div>
-              <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+              <AppointmentScheduler
+                context="new-patient"
+                onPatientCreated={handlePatientCreated}
+              />
+           </div>
+           <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
+              <div className="relative w-full sm:w-auto flex-grow">
                  <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                  <Input
                   placeholder="ابحث بالاسم أو رقم الهاتف..."
@@ -115,84 +172,115 @@ export function PatientsTab() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Select value={filterGender} onValueChange={setFilterGender}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="تصفية حسب الجنس" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="ذكر">ذكر</SelectItem>
+                  <SelectItem value="أنثى">أنثى</SelectItem>
+                  <SelectItem value="آخر">آخر</SelectItem>
+                </SelectContent>
+              </Select>
+              {showClearButton && (
+                <Button variant="ghost" onClick={handleClearFilters}>
+                  مسح الفلاتر
+                  <X className="mr-2 h-4 w-4" />
+                </Button>
+              )}
            </div>
         </CardHeader>
         <CardContent>
-          {searchTerm && filteredPatients.length === 0 ? (
-                <Card className="text-center py-10">
-                    <CardHeader>
-                        <div className="mx-auto bg-muted rounded-full p-3 w-fit">
-                            <UserPlus className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <CardTitle className="mt-4">لم يتم العثور على المريض</CardTitle>
-                        <CardDescription>
-                           هل تريد إضافة "{searchTerm}" كمريض جديد في النظام؟
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <AppointmentScheduler 
-                            context="new-patient" 
-                            onPatientCreated={handlePatientCreated}
-                            prefilledData={getPrefilledData()}
-                         />
-                    </CardContent>
-                </Card>
-            ) : (
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">المريض</TableHead>
-                      <TableHead className="text-right">رقم الهاتف</TableHead>
-                      <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
-                      <TableHead className="text-center">الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPatients.length > 0 ? filteredPatients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-4">
-                            <Avatar>
-                               <AvatarImage src={patient.avatarUrl} data-ai-hint="person avatar" />
-                              <AvatarFallback>{getPatientInitials(patient.name)}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{patient.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{patient.phone}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
-                        <TableCell className="text-center">
-                           <div className="flex items-center justify-center gap-2">
-                             <AppointmentScheduler onAppointmentCreated={() => {}} doctorId={undefined} selectedPatientId={patient.id} />
-                             <Button variant="outline" size="sm" onClick={() => setSelectedPatient(patient)}>عرض الملف</Button>
-                           </div>
-                        </TableCell>
-                      </TableRow>
-                    )) : (
-                      <TableRow>
-                          <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                              {searchTerm ? "لا يوجد مرضى يطابقون معايير البحث." : "ابدأ البحث عن طريق كتابة اسم أو رقم هاتف المريض."}
-                          </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )
-          }
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">المريض</TableHead>
+                  <TableHead className="text-right">رقم الهاتف</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right">الجنس</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
+                  <TableHead className="text-center">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPatients.length > 0 ? filteredPatients.map((patient) => (
+                  <TableRow key={patient.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-4">
+                        <Avatar>
+                           <AvatarImage src={patient.avatarUrl} data-ai-hint="person avatar" />
+                          <AvatarFallback>{getPatientInitials(patient.name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{patient.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{patient.phone}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{patient.gender}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
+                    <TableCell className="text-center">
+                       <div className="flex items-center justify-center gap-1">
+                         <Button variant="outline" size="sm" onClick={() => setSelectedPatientForProfile(patient)}>عرض الملف</Button>
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedPatientForEdit(patient)}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">تعديل</span>
+                         </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                 <Trash2 className="h-4 w-4" />
+                                 <span className="sr-only">حذف</span>
+                               </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف ملف المريض بشكل دائم وجميع بياناته المرتبطة به.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handlePatientDeleted(patient.id)} className="bg-destructive hover:bg-destructive/90">
+                                  نعم، قم بالحذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                       </div>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                          {searchTerm ? "لا يوجد مرضى يطابقون معايير البحث." : "لا توجد سجلات مرضى لعرضها."}
+                      </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {selectedPatient && (
+      {selectedPatientForProfile && (
          <PatientDetails
-          patient={selectedPatient}
-          isOpen={!!selectedPatient}
+          patient={selectedPatientForProfile}
+          isOpen={!!selectedPatientForProfile}
           onOpenChange={(isOpen) => {
             if (!isOpen) {
-              setSelectedPatient(null);
+              setSelectedPatientForProfile(null);
             }
           }}
+        />
+      )}
+
+      {selectedPatientForEdit && (
+        <EditPatientDialog
+          isOpen={!!selectedPatientForEdit}
+          onClose={() => setSelectedPatientForEdit(null)}
+          patient={selectedPatientForEdit}
+          onPatientUpdated={handlePatientUpdated}
         />
       )}
     </>

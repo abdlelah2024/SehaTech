@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Sparkles, Loader2, Lightbulb } from "lucide-react"
+import { CalendarIcon, Sparkles, Loader2, Lightbulb, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -68,9 +68,11 @@ export function AppointmentScheduler({
   const [newPatientName, setNewPatientName] = useState("")
   const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
+  const [newPatientGender, setNewPatientGender] = useState<Patient['gender']>("ذكر")
   const [newPatientAddress, setNewPatientAddress] = useState("")
   
   useEffect(() => {
+    if (!open) return;
     const patientsUnsub = onSnapshot(query(collection(db, "patients")), (snap) => {
         setPatients(snap.docs.map(doc => ({id: doc.id, ...doc.data()} as Patient)));
     });
@@ -81,7 +83,7 @@ export function AppointmentScheduler({
         patientsUnsub();
         doctorsUnsub();
     }
-  }, []);
+  }, [open]);
   
   useEffect(() => {
     setSelectedDoctorId(doctorId);
@@ -197,7 +199,7 @@ export function AppointmentScheduler({
         const newPatient: Omit<Patient, 'id'> = {
             name: newPatientName,
             dob: format(newPatientDob, "yyyy-MM-dd"),
-            gender: 'آخر',
+            gender: newPatientGender,
             phone: newPatientPhone,
             address: newPatientAddress,
             avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(newPatientName)}`
@@ -216,7 +218,7 @@ export function AppointmentScheduler({
   }
 
   const getButtonText = () => {
-    if (context === 'new-patient') return 'مريض جديد';
+    if (context === 'new-patient') return 'إضافة مريض جديد';
     if (doctorId || initialSelectedPatientId) return 'حجز موعد';
     return 'موعد جديد';
   }
@@ -226,6 +228,7 @@ export function AppointmentScheduler({
     setNewPatientDob(undefined);
     setNewPatientPhone("");
     setNewPatientAddress("");
+    setNewPatientGender("ذكر");
     setSelectedPatientId(initialSelectedPatientId);
     setSelectedDoctorId(doctorId);
     setDate(new Date());
@@ -243,7 +246,10 @@ export function AppointmentScheduler({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) resetAndClose(); else setOpen(true);}}>
       <DialogTrigger asChild>
-        <Button>{getButtonText()}</Button>
+        <Button>
+            {isNewPatientFlow && <UserPlus className="ml-2 h-4 w-4" />}
+            {getButtonText()}
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -293,6 +299,19 @@ export function AppointmentScheduler({
                   </PopoverContent>
                 </Popover>
               </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="gender" className="text-right">الجنس</Label>
+              <Select value={newPatientGender} onValueChange={(value) => setNewPatientGender(value as Patient['gender'])}>
+                <SelectTrigger id="gender" className="col-span-3">
+                  <SelectValue placeholder="اختر الجنس" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ذكر">ذكر</SelectItem>
+                  <SelectItem value="أنثى">أنثى</SelectItem>
+                  <SelectItem value="آخر">آخر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="address" className="text-right">العنوان</Label>
               <Input id="address" placeholder="صنعاء، شارع تعز" className="col-span-3" value={newPatientAddress} onChange={(e) => setNewPatientAddress(e.target.value)} />
