@@ -60,4 +60,20 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  status?: 'online' | 'offline';
 }
+
+export interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface Conversation {
+  userId: string;
+  messages: Message[];
+}
+
+    

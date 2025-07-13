@@ -12,6 +12,7 @@ import {
   Users,
   CreditCard,
   Menu,
+  MessageSquare,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +35,7 @@ import { PatientsTab } from "@/components/dashboard/patients-tab"
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
 import { BillingTab } from "@/components/dashboard/billing-tab"
 import { UsersTab } from "@/components/dashboard/users-tab"
+import { ChatTab } from "@/components/dashboard/chat-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
@@ -42,7 +44,7 @@ import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "analytics" | "users";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "analytics" | "users" | "chat";
 
 export default function Dashboard() {
   const searchParams = useSearchParams()
@@ -76,6 +78,7 @@ export default function Dashboard() {
     { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors" },
     { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients" },
     { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing" },
+    { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat" },
     { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics" },
     { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users" },
   ];
@@ -112,7 +115,7 @@ export default function Dashboard() {
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
           {link.badge && (
-             <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+             <Badge className="mr-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
           )}
@@ -132,25 +135,8 @@ export default function Dashboard() {
 
   return (
     <>
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-l bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Stethoscope className="h-6 w-6 text-primary" />
-              <span className="">صحة تك</span>
-            </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">فتح الإشعارات</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-             {renderNavLinks()}
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col">
+    <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
+       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -170,15 +156,6 @@ export default function Dashboard() {
                {renderNavLinks(true)}
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1">
-             <GlobalSearch 
-                onViewProfile={setSelectedPatientForProfile}
-                onNewAppointment={(patient) => {
-                  setSelectedPatientForAppointment(patient);
-                  setIsAppointmentModalOpen(true);
-                }}
-             />
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
@@ -195,10 +172,19 @@ export default function Dashboard() {
               <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+           <div className="w-full flex-1">
+             <GlobalSearch 
+                onViewProfile={setSelectedPatientForProfile}
+                onNewAppointment={(patient) => {
+                  setSelectedPatientForAppointment(patient);
+                  setIsAppointmentModalOpen(true);
+                }}
+             />
+          </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">
+            <h1 className="text-lg font-semibold md:text-2xl capitalize">
               {navLinks.find(l => l.id === activeTab)?.label}
             </h1>
           </div>
@@ -218,6 +204,9 @@ export default function Dashboard() {
             <TabsContent value="billing">
               <BillingTab />
             </TabsContent>
+             <TabsContent value="chat">
+              <ChatTab />
+            </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab />
             </TabsContent>
@@ -226,6 +215,23 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         </main>
+      </div>
+       <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Button variant="outline" size="icon" className="mr-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">فتح الإشعارات</span>
+            </Button>
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <span className="">صحة تك</span>
+              <Stethoscope className="h-6 w-6 text-primary" />
+            </Link>
+          </div>
+          <div className="flex-1 overflow-auto py-2">
+             {renderNavLinks()}
+          </div>
+        </div>
       </div>
     </div>
     {selectedPatientForProfile && (
@@ -246,3 +252,5 @@ export default function Dashboard() {
     </>
   )
 }
+
+    

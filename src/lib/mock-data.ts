@@ -1,5 +1,5 @@
 
-import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User } from "./types";
+import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation } from "./types";
 import { getPatientInitials } from "./utils";
 
 const patientNames = [
@@ -222,8 +222,29 @@ export const mockTransactions: Transaction[] = [
 ];
 
 export const mockUsers: User[] = [
-  { id: 'user-1', name: 'علي عبدالله', email: 'ali@example.com', role: 'admin' },
-  { id: 'user-2', name: 'سالم محمد', email: 'salem@example.com', role: 'receptionist' },
-  { id: 'user-3', name: 'د. إميلي كارتر', email: 'emily.carter@example.com', role: 'doctor' },
-  { id: 'user-4', name: 'د. بنيامين لي', email: 'ben.lee@example.com', role: 'doctor' },
+  { id: 'user-1', name: 'علي عبدالله', email: 'ali@example.com', role: 'admin', status: 'online' },
+  { id: 'user-2', name: 'سالم محمد', email: 'salem@example.com', role: 'receptionist', status: 'offline' },
+  { id: 'user-3', name: 'د. إميلي كارتر', email: 'emily.carter@example.com', role: 'doctor', status: 'online' },
+  { id: 'user-4', name: 'د. بنيامين لي', email: 'ben.lee@example.com', role: 'doctor', status: 'offline' },
 ];
+
+export const mockConversations: Conversation[] = [
+  {
+    userId: 'user-2', // سالم محمد
+    messages: [
+      { id: 'msg-1', senderId: 'user-1', receiverId: 'user-2', text: 'مرحباً سالم، هل يمكنك مراجعة جدول مواعيد د. إميلي لهذا اليوم؟', timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString() },
+      { id: 'msg-2', senderId: 'user-2', receiverId: 'user-1', text: 'أهلاً علي. بالتأكيد، لحظة من فضلك.', timestamp: new Date(now.getTime() - 59 * 60 * 1000).toISOString() },
+      { id: 'msg-3', senderId: 'user-2', receiverId: 'user-1', text: 'الجدول يبدو ممتلئاً بعد الظهر، ولكن هناك فراغ في الساعة 11 صباحاً.', timestamp: new Date(now.getTime() - 58 * 60 * 1000).toISOString() },
+      { id: 'msg-4', senderId: 'user-1', receiverId: 'user-2', text: 'ممتاز، شكراً جزيلاً لك.', timestamp: new Date(now.getTime() - 57 * 60 * 1000).toISOString() },
+    ]
+  },
+  {
+    userId: 'user-3', // د. إميلي كارتر
+    messages: [
+       { id: 'msg-5', senderId: 'user-1', receiverId: 'user-3', text: 'مرحباً د. إميلي، هل يمكنكِ إلقاء نظرة على نتائج المريض أحمد الصالح؟', timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString() },
+       { id: 'msg-6', senderId: 'user-3', receiverId: 'user-1', text: 'أهلاً، سأقوم بذلك حالاً.', timestamp: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString() },
+    ]
+  }
+]
+
+    
