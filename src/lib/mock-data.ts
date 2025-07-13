@@ -1,6 +1,9 @@
 
 import type { Patient, Doctor, Appointment, RecentActivity, Transaction, User, Conversation, AuditLog } from "./types";
 import { getPatientInitials } from "./utils";
+import { subDays } from 'date-fns';
+
+const now = new Date();
 
 const patientNames = [
   'أحمد الصالح', 'فاطمة الزهراء', 'خالد المصري', 'عائشة الشامي', 'يوسف العراقي',
@@ -14,7 +17,8 @@ export const mockPatients: Patient[] = patientNames.map((name, index) => ({
   gender: index % 3 === 0 ? 'ذكر' : 'أنثى',
   phone: `777-010${index + 1}`,
   address: `شارع ${index + 1}، المدينة`,
-  avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(name)}`
+  avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(name)}`,
+  createdAt: subDays(now, index * 10).toISOString(), // Simulate patient creation date
 }));
 
 // Function to get a future date string
@@ -91,7 +95,6 @@ export const mockDoctors: Doctor[] = [
 ];
 
 
-const now = new Date();
 export const mockAppointments: Appointment[] = [
   {
     id: 'appt-1',
@@ -100,7 +103,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-1',
     doctorName: `د. ${mockDoctors[0].name}`,
     doctorSpecialty: mockDoctors[0].specialty,
-    dateTime: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+    dateTime: new Date(now.getTime()).toISOString(),
     status: 'Scheduled',
   },
   {
@@ -120,7 +123,7 @@ export const mockAppointments: Appointment[] = [
     doctorId: 'doctor-3',
     doctorName: `د. ${mockDoctors[2].name}`,
     doctorSpecialty: mockDoctors[2].specialty,
-    dateTime: new Date(now.getTime() + 1 * 60 * 60 * 1000).toISOString(),
+    dateTime: new Date(now.getTime()).toISOString(),
     status: 'Waiting',
   },
    {
@@ -184,6 +187,16 @@ export const mockAppointments: Appointment[] = [
     dateTime: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
     status: 'Completed',
   },
+  {
+    id: 'appt-10',
+    patientId: 'patient-6',
+    patientName: mockPatients[5].name,
+    doctorId: 'doctor-1',
+    doctorName: `د. ${mockDoctors[0].name}`,
+    doctorSpecialty: mockDoctors[0].specialty,
+    dateTime: new Date().toISOString(),
+    status: 'Completed',
+  }
 ];
 
 export const mockRecentActivities: RecentActivity[] = [
@@ -219,6 +232,7 @@ export const mockTransactions: Transaction[] = [
   { id: 'txn-3', patientId: 'patient-5', patientName: mockPatients[4].name, date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(), amount: 9000, status: 'Success', service: 'أشعة سينية' },
   { id: 'txn-4', patientId: 'patient-3', patientName: mockPatients[2].name, date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), amount: 5000, status: 'Failed', service: 'تطعيم' },
   { id: 'txn-5', patientId: 'patient-4', patientName: mockPatients[3].name, date: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), amount: 7500, status: 'Success', service: 'تخطيط قلب' },
+  { id: 'txn-6', patientId: 'patient-6', patientName: mockPatients[5].name, date: new Date().toISOString(), amount: 7500, status: 'Success', service: 'استشارة' },
 ];
 
 export const mockUsers: User[] = [
@@ -254,4 +268,6 @@ export const mockAuditLogs: AuditLog[] = [
     { id: 'log-4', user: 'د. إميلي كارتر', userRole: 'doctor', action: 'عرض ملف المريض: فاطمة الزهراء', section: 'المرضى', timestamp: new Date(now.getTime() - 3 * 60 * 1000).toISOString() },
     { id: 'log-5', user: 'سالم محمد', userRole: 'receptionist', action: 'سجل فاتورة للمريض: خالد المصري', section: 'الفواتير', timestamp: new Date(now.getTime() - 2 * 60 * 1000).toISOString() },
 ];
+    
+
     

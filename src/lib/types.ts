@@ -7,6 +7,7 @@ export interface Patient {
   phone: string;
   address: string;
   avatarUrl?: string;
+  createdAt: string; // Added for filtering new patients
 }
 
 export interface Doctor {
@@ -84,4 +85,6 @@ export interface AuditLog {
     section: string;
     timestamp: string;
 }
+    
+
     
