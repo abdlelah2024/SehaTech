@@ -143,38 +143,44 @@ export function Overview() {
       return inDateRange && matchesDoctor;
     });
 
+    const patientIdsFromFilteredAppointments = [...new Set(appointments.map(a => a.patientId))];
+
     const transactions = transactionsState.filter(transaction => {
       const transactionDate = transaction.date.toDate();
       const inDateRange = isWithinInterval(transactionDate, interval);
-      const matchesDoctor = filterDoctor === 'all' ? true : appointments.some(a => a.patientId === transaction.patientId);
+      
+      const matchesDoctor = filterDoctor === 'all' ? true : patientIdsFromFilteredAppointments.includes(transaction.patientId);
+      
       return inDateRange && matchesDoctor;
     });
-
-    const patients = patientsState.filter(patient => {
-        const firstAppointment = appointmentsState
-            .filter(a => a.patientId === patient.id)
-            .sort((a,b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
-        if (firstAppointment) {
-            return isWithinInterval(new Date(firstAppointment.dateTime), interval);
-        }
-        return false;
-    });
     
+    const newPatientsInPeriod = patientsState.filter(patient => {
+        if (!patient.createdAt) return false;
+        const creationDate = patient.createdAt.toDate();
+        return isWithinInterval(creationDate, interval);
+    });
+
+    const activeDoctorsInPeriod = doctorsState.filter(doctor => {
+        return appointments.some(a => a.doctorId === doctor.id);
+    });
+
     const doctorAppointmentsCount = doctorsState.map(doctor => {
-        const count = appointmentsState.filter(a => {
-             const appointmentDate = new Date(a.dateTime);
-             const inDateRange = isWithinInterval(appointmentDate, interval);
-             return a.doctorId === doctor.id && inDateRange;
-        }).length;
+        const count = appointments.filter(a => a.doctorId === doctor.id).length;
         return { name: doctor.name, count };
-    }).sort((a, b) => b.count - a.count);
+    }).sort((a, b) => b.count - a.count).filter(d => d.count > 0);
 
 
     const totalRevenue = transactions
       .filter(t => t.status === 'Success')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    return { appointments, transactions, patients, totalRevenue, doctorAppointmentsCount };
+    return { 
+      appointments, 
+      totalRevenue, 
+      newPatientsCount: newPatientsInPeriod.length,
+      activeDoctorsCount: activeDoctorsInPeriod.length,
+      doctorAppointmentsCount
+    };
   }, [filterDoctor, filterDateRange, appointmentsState, transactionsState, patientsState, doctorsState]);
 
   const appointmentsToday = useMemo(() => {
@@ -214,11 +220,11 @@ export function Overview() {
                      {filterDateRange?.from ? (
                       filterDateRange.to ? (
                         <>
-                          {format(filterDateRange.from, "LLL dd, y")} -{" "}
-                          {format(filterDateRange.to, "LLL dd, y")}
+                          {format(filterDateRange.from, "PPP", { locale: ar })} -{" "}
+                          {format(filterDateRange.to, "PPP", { locale: ar })}
                         </>
                       ) : (
-                        format(filterDateRange.from, "LLL dd, y")
+                        format(filterDateRange.from, "PPP", { locale: ar })
                       )
                     ) : (
                       <span>اختر نطاق التاريخ (اليوم افتراضيًا)</span>
@@ -280,7 +286,7 @@ export function Overview() {
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{filteredData.patients.length}</div>
+            <div className="text-2xl font-bold">+{filteredData.newPatientsCount}</div>
             <p className="text-xs text-muted-foreground">
               مرضى جدد في الفترة المحددة
             </p>
@@ -294,9 +300,9 @@ export function Overview() {
             <Stethoscope className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{doctorsState.length}</div>
-            <p className="text-xs text-muted-foreground">
-              إجمالي الأطباء في النظام
+            <div className="text-2xl font-bold">+{filteredData.activeDoctorsCount > 0 ? filteredData.activeDoctorsCount : doctorsState.length}</div>
+             <p className="text-xs text-muted-foreground">
+               {filterDateRange || filterDoctor !== 'all' ? 'أطباء نشطون في الفترة المحددة' : 'إجمالي الأطباء في النظام'}
             </p>
           </CardContent>
         </Card>
