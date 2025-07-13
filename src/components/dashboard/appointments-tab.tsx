@@ -23,6 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, X, Search } from "lucide-react"
@@ -31,6 +40,7 @@ import { format, isSameDay } from "date-fns"
 import { ar } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { LocalizedDateTime } from "../localized-date-time"
+import { useToast } from "@/hooks/use-toast"
 
 interface AppointmentsTabProps {
   // searchTerm removed as it's now handled locally
@@ -44,12 +54,21 @@ const statusTranslations: { [key: string]: string } = {
   'Follow-up': 'إعادة'
 };
 
+const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" | "followup" } = {
+    'Completed': 'success',
+    'Scheduled': 'secondary',
+    'Waiting': 'waiting',
+    'Follow-up': 'followup'
+};
+
+
 export function AppointmentsTab({ }: AppointmentsTabProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
+  const { toast } = useToast()
 
   const handleAppointmentCreated = (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
     const newAppointment: Appointment = {
@@ -68,6 +87,19 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
     setFilterDoctor("all");
   };
 
+  const handleStatusChange = (appointmentId: string, newStatus: Appointment['status']) => {
+    setAppointments(prev =>
+      prev.map(appt =>
+        appt.id === appointmentId ? { ...appt, status: newStatus } : appt
+      )
+    );
+    toast({
+        title: "تم تحديث الحالة",
+        description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
+    })
+  };
+
+
   const filteredAppointments = useMemo(() => {
     return appointments.filter(appointment =>
       (appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,7 +107,7 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
       (filterStatus === 'all' || appointment.status === filterStatus) &&
       (filterDoctor === 'all' || appointment.doctorId === filterDoctor) &&
       (!filterDate || isSameDay(new Date(appointment.dateTime), filterDate))
-    );
+    ).sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   }, [appointments, searchTerm, filterStatus, filterDoctor, filterDate]);
 
   return (
@@ -177,14 +209,29 @@ export function AppointmentsTab({ }: AppointmentsTabProps) {
                     <LocalizedDateTime dateTime={appointment.dateTime} options={{ dateStyle: 'short', timeStyle: 'short' }} />
                   </TableCell>
                   <TableCell>
-                     <Badge variant={
-                       appointment.status === 'Completed' ? 'success' :
-                       appointment.status === 'Scheduled' ? 'secondary' :
-                       appointment.status === 'Waiting' ? 'waiting' :
-                       'followup'
-                     }>
-                      {statusTranslations[appointment.status]}
-                    </Badge>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-28 justify-center">
+                                 <Badge variant={statusBadgeVariants[appointment.status]} className="w-full justify-center">
+                                  {statusTranslations[appointment.status]}
+                                </Badge>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                            <DropdownMenuLabel>تغيير حالة الموعد</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuRadioGroup 
+                                value={appointment.status} 
+                                onValueChange={(newStatus) => handleStatusChange(appointment.id, newStatus as Appointment['status'])}
+                            >
+                            {appointmentStatuses.map(status => (
+                                <DropdownMenuRadioItem key={status} value={status}>
+                                {statusTranslations[status]}
+                                </DropdownMenuRadioItem>
+                            ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               )) : (

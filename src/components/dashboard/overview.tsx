@@ -1,6 +1,6 @@
 
 "use client"
-import { Users, CalendarPlus, Stethoscope, Activity, Wifi, Circle, Database, CheckCircle, XCircle, UserPlus, FileText } from "lucide-react"
+import { Users, CalendarPlus, Stethoscope, Activity, Wifi, Circle, Database, CheckCircle, XCircle, UserPlus, FileText, X } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -23,6 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { mockDoctors, mockPatients, mockTransactions, mockAppointments, mockUsers } from "@/lib/mock-data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getPatientInitials } from "@/lib/utils"
@@ -36,6 +45,7 @@ import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar } from "../ui/calendar"
 import type { DateRange } from "react-day-picker"
+import { useToast } from "@/hooks/use-toast"
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -64,6 +74,13 @@ const statusTranslations: { [key: string]: string } = {
   'Follow-up': 'إعادة'
 };
 
+const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" | "followup" } = {
+    'Completed': 'success',
+    'Scheduled': 'secondary',
+    'Waiting': 'waiting',
+    'Follow-up': 'followup'
+};
+
 const userStatuses = [
   { status: 'online', label: 'متصل', color: 'bg-green-500' },
   { status: 'offline', label: 'غير متصل', color: 'bg-gray-400' },
@@ -75,10 +92,26 @@ const usersWithStatus: (User & { connectionStatus: 'online' | 'offline' | 'inact
   connectionStatus: index % 3 === 0 ? 'online' : index % 3 === 1 ? 'offline' : 'inactive',
 }));
 
+const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
+
 
 export function Overview() {
+  const [appointmentsState, setAppointmentsState] = useState<Appointment[]>(mockAppointments);
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>();
+  const { toast } = useToast();
+
+  const handleStatusChange = (appointmentId: string, newStatus: Appointment['status']) => {
+    setAppointmentsState(prev =>
+      prev.map(appt =>
+        appt.id === appointmentId ? { ...appt, status: newStatus } : appt
+      )
+    );
+    toast({
+        title: "تم تحديث الحالة",
+        description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
+    })
+  };
 
   const filteredData = useMemo(() => {
     const today = new Date();
@@ -86,7 +119,7 @@ export function Overview() {
       ? { start: startOfDay(filterDateRange.from), end: endOfDay(filterDateRange.to) }
       : { start: startOfDay(today), end: endOfDay(today) };
 
-    const appointments = mockAppointments.filter(appointment => {
+    const appointments = appointmentsState.filter(appointment => {
       const appointmentDate = parseISO(appointment.dateTime);
       const inDateRange = isWithinInterval(appointmentDate, interval);
       const matchesDoctor = filterDoctor === 'all' || appointment.doctorId === filterDoctor;
@@ -96,16 +129,10 @@ export function Overview() {
     const transactions = mockTransactions.filter(transaction => {
       const transactionDate = parseISO(transaction.date);
       const inDateRange = isWithinInterval(transactionDate, interval);
-      // We are not filtering transactions by doctor in this example, but it could be added
-      // if appointments were linked to transactions.
       return inDateRange;
     });
 
     const patients = mockPatients.filter(patient => {
-        // This is a rough estimation for "new patients" in the date range.
-        // A real app would have a `createdAt` date for the patient.
-        // For now, let's assume patients with appointments in range are "active".
-        // A better approach for "new" would require a `creationDate` on the patient model.
         const firstAppointment = mockAppointments
             .filter(a => a.patientId === patient.id)
             .sort((a,b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
@@ -116,7 +143,7 @@ export function Overview() {
     });
     
     const doctorAppointmentsCount = mockDoctors.map(doctor => {
-        const count = mockAppointments.filter(a => {
+        const count = appointmentsState.filter(a => {
              const appointmentDate = parseISO(a.dateTime);
              const inDateRange = isWithinInterval(appointmentDate, interval);
              return a.doctorId === doctor.id && inDateRange;
@@ -130,18 +157,14 @@ export function Overview() {
       .reduce((sum, t) => sum + t.amount, 0);
 
     return { appointments, transactions, patients, totalRevenue, doctorAppointmentsCount };
-  }, [filterDoctor, filterDateRange]);
+  }, [filterDoctor, filterDateRange, appointmentsState]);
 
+  const appointmentsToday = useMemo(() => {
+    return appointmentsState
+        .filter(a => isToday(parseISO(a.dateTime)))
+        .sort((a,b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  }, [appointmentsState]);
 
-  const getStatusBadge = (status: Appointment['status']) => {
-     switch (status) {
-        case 'Completed': return 'success';
-        case 'Scheduled': return 'secondary';
-        case 'Waiting': return 'waiting';
-        case 'Follow-up': return 'followup';
-        default: return 'default';
-      }
-  }
   
   const getUserStatus = (status: 'online' | 'offline' | 'inactive') => {
       const statusInfo = userStatuses.find(s => s.status === status);
@@ -191,7 +214,7 @@ export function Overview() {
                         format(filterDateRange.from, "LLL dd, y")
                       )
                     ) : (
-                      <span>اختر نطاق التاريخ</span>
+                      <span>اختر نطاق التاريخ (اليوم افتراضيًا)</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -292,8 +315,8 @@ export function Overview() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockAppointments.filter(a => isToday(parseISO(a.dateTime))).length > 0 ? 
-                             mockAppointments.filter(a => isToday(parseISO(a.dateTime))).map((appointment) => (
+                            {appointmentsToday.length > 0 ? 
+                             appointmentsToday.map((appointment) => (
                                 <TableRow key={appointment.id}>
                                 <TableCell>
                                     <div className="font-medium">{appointment.patientName}</div>
@@ -309,9 +332,29 @@ export function Overview() {
                                     <LocalizedDateTime dateTime={appointment.dateTime} options={{ timeStyle: 'short', hour12: true }} />
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={getStatusBadge(appointment.status)}>
-                                        {statusTranslations[appointment.status]}
-                                    </Badge>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" className="w-28 justify-center">
+                                                <Badge variant={statusBadgeVariants[appointment.status]} className="w-full justify-center">
+                                                {statusTranslations[appointment.status]}
+                                                </Badge>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-56">
+                                            <DropdownMenuLabel>تغيير حالة الموعد</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuRadioGroup 
+                                                value={appointment.status} 
+                                                onValueChange={(newStatus) => handleStatusChange(appointment.id, newStatus as Appointment['status'])}
+                                            >
+                                            {appointmentStatuses.map(status => (
+                                                <DropdownMenuRadioItem key={status} value={status}>
+                                                {statusTranslations[status]}
+                                                </DropdownMenuRadioItem>
+                                            ))}
+                                            </DropdownMenuRadioGroup>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                                 </TableRow>
                             )) : (
@@ -348,6 +391,9 @@ export function Overview() {
                                 <div className="font-semibold">{doc.count} موعد</div>
                             </div>
                         ))}
+                         {filteredData.doctorAppointmentsCount.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات لعرضها حسب الفلاتر المحددة.</p>
+                         )}
                     </div>
                 </CardContent>
             </Card>
@@ -383,5 +429,3 @@ export function Overview() {
     </div>
   )
 }
-
-    
