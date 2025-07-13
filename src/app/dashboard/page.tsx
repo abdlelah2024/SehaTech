@@ -15,6 +15,7 @@ import {
   Menu,
   MessageSquare,
   History,
+  SlidersHorizontal,
 } from "lucide-react"
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -43,6 +44,7 @@ import { BillingTab } from "@/components/dashboard/billing-tab"
 import { UsersTab } from "@/components/dashboard/users-tab"
 import { ChatTab } from "@/components/dashboard/chat-tab"
 import { AuditLogTab } from "@/components/dashboard/audit-log-tab"
+import { SettingsTab } from "@/components/dashboard/settings-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
@@ -51,7 +53,7 @@ import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "users" | "audit-log";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "users" | "settings" | "audit-log";
 
 
 export default function Dashboard() {
@@ -97,6 +99,7 @@ export default function Dashboard() {
     { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", roles: ['admin', 'receptionist', 'doctor'] },
     { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", roles: ['admin'] },
     { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", roles: ['admin'] },
+    { id: "settings", label: "الإعدادات", icon: SlidersHorizontal, href: "/dashboard?tab=settings", roles: ['admin'] },
     { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", roles: ['admin'] },
   ];
   
@@ -238,7 +241,7 @@ export default function Dashboard() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>الإعدادات</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTabChange('settings')}>الإعدادات</DropdownMenuItem>
               <DropdownMenuItem>الدعم</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>تسجيل الخروج</DropdownMenuItem>
@@ -275,6 +278,9 @@ export default function Dashboard() {
             </TabsContent>
             <TabsContent value="users">
               <UsersTab />
+            </TabsContent>
+            <TabsContent value="settings">
+              <SettingsTab />
             </TabsContent>
             <TabsContent value="audit-log">
               <AuditLogTab />
