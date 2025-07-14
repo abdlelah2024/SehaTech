@@ -1,223 +1,181 @@
 
-// This script is used to seed the database with initial data.
-// It is not part of the main application and should only be run once
-// during the initial setup.
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { config } from 'dotenv';
 
-// To run this script, use the command: `npm run db:seed`
+// Load environment variables from .env file
+config({ path: './.env' });
+config({ path: './src/.env' });
 
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  doc, 
-  setDoc,
-  writeBatch,
-  serverTimestamp
-} from 'firebase/firestore';
-import 'dotenv/config'
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
+const app = initializeApp({
+  credential: cert(serviceAccount)
+});
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const adminUser = {
-    email: 'Asd19082@gmail.com',
-    password: '12345678',
-    name: 'المدير العام',
-    role: 'admin'
-};
+const getPatientInitials = (name) => {
+  const names = name.split(" ")
+  return names.length > 1
+    ? `${names[0][0]}${names[names.length - 1][0]}`
+    : names[0]?.[0] || ""
+}
 
-const doctors = [
-    {
-      "name": "أحمد قايد سالم",
-      "specialty": "باطنية",
-      "image": "https://placehold.co/100x100.png?text=A",
-      "servicePrice": 5000,
-      "freeReturnDays": 10,
-      "availableDays": ["السبت", "الاثنين", "الأربعاء"],
-      "availability": [
-        { "date": "2025-07-26", "slots": ["09:00", "09:30", "11:00"] },
-        { "date": "2025-07-28", "slots": ["10:00", "10:30", "11:00", "11:30"] }
-      ]
-    },
-    {
-      "name": "فاطمة علي محمد",
-      "specialty": "أطفال",
-      "image": "https://placehold.co/100x100.png?text=F",
-      "servicePrice": 4500,
-      "freeReturnDays": 14,
-       "availableDays": ["الأحد", "الثلاثاء", "الخميس"],
-      "availability": [
-        { "date": "2025-07-27", "slots": ["14:00", "14:30", "15:00"] },
-        { "date": "2025-07-29", "slots": ["09:00", "09:30"] }
-      ]
-    },
-    {
-        "name": "خالد عبدالله",
-        "specialty": "جلدية",
-        "image": "https://placehold.co/100x100.png?text=K",
-        "servicePrice": 6000,
-        "freeReturnDays": 7,
-         "availableDays": ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء"],
-        "availability": [
-           { "date": "2025-07-26", "slots": ["16:00", "16:30"] },
-           { "date": "2025-07-27", "slots": ["16:00", "16:30", "17:00"] }
-        ]
+async function seedDatabase() {
+  console.log('Starting database seeding...');
+
+  try {
+    // Clear existing users
+    const listUsersResult = await auth.listUsers(1000);
+    const uids = listUsersResult.users.map((userRecord) => userRecord.uid);
+    if (uids.length > 0) {
+      await auth.deleteUsers(uids);
+      console.log('Successfully deleted existing users.');
+    } else {
+      console.log('No existing users to delete.');
     }
-];
+  } catch (error) {
+    console.error('Error deleting users:', error);
+  }
 
-const patients = [
-    {
-        name: "صالح سريع",
-        dob: "1990-05-15",
-        gender: "ذكر",
-        phone: "777123456",
-        address: "صنعاء، شارع هائل",
-    },
-    {
-        name: "مريم قائد",
-        dob: "1985-11-20",
-        gender: "أنثى",
-        phone: "777987654",
-        address: "صنعاء، شارع الزبيري",
-    },
-     {
-        name: "علي محسن",
-        dob: "2002-01-30",
-        gender: "ذكر",
-        phone: "771223344",
-        address: "صنعاء، الدائري",
+  // Clear Firestore collections
+  const collections = ['users', 'patients', 'doctors', 'appointments', 'transactions', 'conversations', 'auditLogs'];
+  for (const collectionName of collections) {
+    console.log(`Clearing collection: ${collectionName}`);
+    const collectionRef = db.collection(collectionName);
+    const snapshot = await collectionRef.get();
+    if (snapshot.empty) {
+        console.log(`Collection ${collectionName} is already empty.`);
+        continue;
     }
-];
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log(`Successfully cleared collection: ${collectionName}`);
+  }
 
-async function seedAdminUser() {
-    console.log('Attempting to create admin user...');
+
+  // --- Create Users ---
+  console.log('Creating users...');
+  const usersToCreate = [
+    { email: 'abdlelah2013@gmail.com', password: '123456', displayName: 'عبدالإله القدسي', role: 'admin' },
+    { email: 'receptionist@sehatech.com', password: '123456', displayName: 'فاطمة الزهراء', role: 'receptionist' },
+    { email: 'doctor@sehatech.com', password: '123456', displayName: 'أحمد قايد سالم', role: 'doctor' },
+  ];
+
+  const userRecords = {};
+
+  for (const userData of usersToCreate) {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, adminUser.email, adminUser.password);
-        const user = userCredential.user;
-        console.log(`Admin user created in Auth with UID: ${user.uid}`);
+      const userRecord = await auth.createUser({
+        email: userData.email,
+        password: userData.password,
+        displayName: userData.displayName,
+      });
+      console.log(`Successfully created user: ${userRecord.email}`);
+      userRecords[userData.role] = userRecord;
 
-        await setDoc(doc(db, "users", user.uid), {
-            name: adminUser.name,
-            email: adminUser.email,
-            role: adminUser.role,
-            createdAt: serverTimestamp()
-        });
-        console.log('Admin user document created in Firestore.');
-        return user.uid;
+      // Add user to Firestore 'users' collection
+      await db.collection('users').doc(userRecord.uid).set({
+        name: userData.displayName,
+        email: userData.email,
+        role: userData.role,
+        createdAt: Timestamp.now(),
+      });
+       console.log(`Added ${userData.displayName} to Firestore users collection.`);
+
     } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            console.log('Admin user already exists in Auth. Signing in to get UID...');
-            const userCredential = await signInWithEmailAndPassword(auth, adminUser.email, adminUser.password);
-            console.log(`Signed in as admin. UID: ${userCredential.user.uid}`);
-            return userCredential.user.uid;
-        } else {
-            console.error('Error creating or signing in admin user:', error);
-            throw error;
-        }
+      if (error.code === 'auth/email-already-exists') {
+        console.warn(`User with email ${userData.email} already exists. Skipping creation.`);
+        const existingUser = await auth.getUserByEmail(userData.email);
+        userRecords[userData.role] = existingUser;
+        // Ensure user is in firestore
+         await db.collection('users').doc(existingUser.uid).set({
+            name: userData.displayName,
+            email: userData.email,
+            role: userData.role,
+            createdAt: Timestamp.now(),
+        }, { merge: true });
+
+      } else {
+        console.error('Error creating user:', error);
+      }
     }
-}
+  }
+   console.log('Finished creating users.');
+
+  // --- Create Doctors ---
+  console.log('Creating doctors...');
+  const doctorsToCreate = [
+    { name: 'أحمد قايد سالم', specialty: 'باطنية', servicePrice: 5000, freeReturnDays: 14, availability: [], availableDays: ['السبت', 'الاثنين', 'الأربعاء'] },
+    { name: 'علي محمد عبدالله', specialty: 'أطفال', servicePrice: 4000, freeReturnDays: 10, availability: [], availableDays: ['الأحد', 'الثلاثاء', 'الخميس'] },
+    { name: 'سارة يوسف', specialty: 'جلدية', servicePrice: 6000, freeReturnDays: 7, availability: [], availableDays: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء'] },
+  ];
+  
+  const doctorDocs = [];
+  for (const doctorData of doctorsToCreate) {
+      const docRef = await db.collection('doctors').add({
+          ...doctorData,
+          image: `https://placehold.co/100x100.png?text=${getPatientInitials(doctorData.name)}`
+      });
+      doctorDocs.push({id: docRef.id, ...doctorData});
+      console.log(`Created doctor: ${doctorData.name}`);
+  }
+  console.log('Finished creating doctors.');
 
 
-async function seedCollection(collectionName, data) {
-    console.log(`Seeding ${collectionName}...`);
-    const collectionRef = collection(db, collectionName);
-    const batch = writeBatch(db);
-    const docRefs = [];
+  // --- Create Patients ---
+  console.log('Creating patients...');
+  const patientsToCreate = [
+    { name: 'صالح سريع', dob: '1985-05-20', gender: 'ذكر', phone: '777123456', address: 'صنعاء، شارع حده' },
+    { name: 'مريم قائد', dob: '1992-11-10', gender: 'أنثى', phone: '777654321', address: 'صنعاء، شارع الزبيري' },
+    { name: 'خالد المصري', dob: '1978-02-15', gender: 'ذكر', phone: '777987654', address: 'صنعاء، شارع تعز' },
+  ];
 
-    data.forEach(item => {
-        const docRef = doc(collectionRef); 
-        const newItem = {
-            ...item,
-            ...(collectionName === 'patients' && { createdAt: serverTimestamp() }),
-            ...(collectionName === 'patients' && { avatarUrl: `https://placehold.co/40x40.png?text=${item.name.charAt(0)}`})
-        };
-        batch.set(docRef, newItem);
-        docRefs.push({ id: docRef.id, ...newItem });
+  const patientDocs = [];
+  for(const patientData of patientsToCreate) {
+    const docRef = await db.collection('patients').add({
+        ...patientData,
+        avatarUrl: `https://placehold.co/40x40.png?text=${getPatientInitials(patientData.name)}`,
+        createdAt: Timestamp.now()
     });
+    patientDocs.push({id: docRef.id, ...patientData});
+    console.log(`Created patient: ${patientData.name}`);
+  }
+   console.log('Finished creating patients.');
 
-    await batch.commit();
-    console.log(`${collectionName} seeded successfully.`);
-    return docRefs;
+
+  // --- Create Appointments ---
+   console.log('Creating appointments...');
+   const appointmentsToCreate = [
+       { patientIndex: 0, doctorIndex: 0, status: 'Completed', date: new Date() },
+       { patientIndex: 1, doctorIndex: 1, status: 'Scheduled', date: new Date(new Date().setDate(new Date().getDate() + 1))},
+       { patientIndex: 2, doctorIndex: 2, status: 'Waiting', date: new Date() }
+   ];
+
+   for(const appData of appointmentsToCreate) {
+       const patient = patientDocs[appData.patientIndex];
+       const doctor = doctorDocs[appData.doctorIndex];
+       await db.collection('appointments').add({
+           patientId: patient.id,
+           patientName: patient.name,
+           doctorId: doctor.id,
+           doctorName: `د. ${doctor.name}`,
+           doctorSpecialty: doctor.specialty,
+           dateTime: appData.date.toISOString(),
+           status: appData.status,
+       });
+       console.log(`Created appointment for ${patient.name} with Dr. ${doctor.name}`);
+   }
+   console.log('Finished creating appointments.');
+
+
+  console.log('Database seeding completed successfully!');
 }
 
-async function seedAppointments(seededPatients, seededDoctors) {
-    if (seededPatients.length === 0 || seededDoctors.length === 0) {
-        console.log("Skipping appointment seeding due to missing patient or doctor data.");
-        return;
-    }
-
-    const appointments = [
-        {
-            patient: seededPatients[0],
-            doctor: seededDoctors[0],
-            dateTime: new Date(2025, 6, 31, 9, 0).toISOString(),
-            status: 'Scheduled',
-        },
-        {
-            patient: seededPatients[1],
-            doctor: seededDoctors[1],
-            dateTime: new Date(2025, 6, 29, 14, 30).toISOString(),
-            status: 'Completed',
-        },
-         {
-            patient: seededPatients[0],
-            doctor: seededDoctors[0],
-            dateTime: new Date(2025, 6, 14, 16, 19).toISOString(),
-            status: 'Completed',
-        }
-    ];
-
-    const batch = writeBatch(db);
-    const appointmentsRef = collection(db, "appointments");
-
-    appointments.forEach(appt => {
-        const docRef = doc(appointmentsRef);
-        batch.set(docRef, {
-            patientId: appt.patient.id,
-            patientName: appt.patient.name,
-            doctorId: appt.doctor.id,
-            doctorName: `د. ${appt.doctor.name}`,
-            doctorSpecialty: appt.doctor.specialty,
-            dateTime: appt.dateTime,
-            status: appt.status,
-        });
-    });
-
-    await batch.commit();
-    console.log("Appointments seeded successfully.");
-}
-
-
-async function main() {
-    console.log('--- Starting Database Seeding ---');
-    await seedAdminUser();
-    const seededDoctors = await seedCollection('doctors', doctors);
-    const seededPatients = await seedCollection('patients', patients);
-    await seedAppointments(seededPatients, seededDoctors);
-    console.log('--- Database Seeding Complete ---');
-}
-
-main().catch(e => {
-    console.error("An error occurred during seeding:", e);
-}).finally(() => {
-    // Exit the process
-    process.exit();
-});
+seedDatabase().catch(console.error);

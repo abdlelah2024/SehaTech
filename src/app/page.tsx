@@ -22,7 +22,7 @@ import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@sehatech.com")
+  const [email, setEmail] = useState("abdlelah2013@gmail.com")
   const [password, setPassword] = useState("123456")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -106,5 +106,4 @@ export default function LoginPage() {
     </main>
   )
 }
-
     
