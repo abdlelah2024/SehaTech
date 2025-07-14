@@ -53,8 +53,9 @@ import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { EditUserDialog } from "./edit-user-dialog"
 import { Edit, Trash2, Search } from "lucide-react"
-import { db } from "@/lib/firebase"
+import { db, auth } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { sendPasswordResetEmail } from "firebase/auth"
 
 const roleTranslations: { [key in UserRole]: string } = {
   admin: 'مدير',
@@ -70,7 +71,6 @@ export function UsersTab() {
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("") // Note: In a real app, you wouldn't handle passwords this way.
   const [role, setRole] = useState<UserRole>("receptionist")
   const { toast } = useToast()
 
@@ -84,7 +84,7 @@ export function UsersTab() {
   }, []);
 
   const handleAddUser = async () => {
-    if (!name || !email || !role || !password) {
+    if (!name || !email || !role) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -93,27 +93,35 @@ export function UsersTab() {
       return;
     }
 
-    // WARNING: This is a client-side simulation for prototyping.
-    // In a real app, you'd use a secure backend function (e.g., Firebase Cloud Function)
-    // to create a user in Firebase Authentication and then add their details to Firestore.
-    // Storing plain text passwords is a major security risk.
+    // In a real application, you would ideally use a Cloud Function to create the user in Auth
+    // and then send the password reset link.
+    // For this prototype, we'll add the user to Firestore and then trigger the email.
+    // Note: The user won't be able to log in until they are created in Firebase Auth,
+    // which this client-side code doesn't do. `sendPasswordResetEmail` works for existing users.
+    // A full implementation would require a backend function.
+    // As a workaround, we will assume the admin creates the user in the Firebase Console first.
     try {
       await addDoc(collection(db, "users"), { name, email, role });
+      await sendPasswordResetEmail(auth, email);
+
       toast({
-        title: "تمت إضافة المستخدم",
-        description: `تمت إضافة ${name} إلى النظام. سيحتاج إلى إكمال إعداد حسابه.`,
+        title: "تم إرسال دعوة للمستخدم",
+        description: `تم إرسال رابط لتعيين كلمة المرور إلى ${email}.`,
       });
       resetAddDialog();
-    } catch(e) {
+    } catch(e: any) {
       console.error(e);
-      toast({ variant: "destructive", title: "خطأ", description: "فشلت إضافة المستخدم."});
+      if (e.code === 'auth/user-not-found') {
+          toast({ variant: "destructive", title: "خطأ: المستخدم غير موجود", description: "يرجى التأكد من إنشاء حساب لهذا البريد الإلكتروني في Firebase Authentication أولاً."});
+      } else {
+        toast({ variant: "destructive", title: "خطأ", description: "فشلت إضافة المستخدم أو إرسال البريد."});
+      }
     }
   };
   
   const resetAddDialog = () => {
     setName("");
     setEmail("");
-    setPassword("");
     setRole("receptionist");
     setIsAddDialogOpen(false);
   }
@@ -171,7 +179,7 @@ export function UsersTab() {
                 <DialogHeader>
                   <DialogTitle>إضافة مستخدم جديد</DialogTitle>
                    <DialogDescription>
-                    أدخل بيانات المستخدم الجديد وقم بتعيين دور له.
+                    أدخل بيانات المستخدم. سيتم إرسال رابط لتعيين كلمة المرور إلى بريده الإلكتروني.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -182,10 +190,6 @@ export function UsersTab() {
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="user@example.com" />
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="password" className="text-right">كلمة المرور</Label>
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" placeholder="••••••••" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">الدور (الصلاحية)</Label>
@@ -203,7 +207,7 @@ export function UsersTab() {
                 </div>
                 <DialogFooter>
                    <Button variant="outline" onClick={resetAddDialog}>إلغاء</Button>
-                   <Button onClick={handleAddUser}>إضافة المستخدم</Button>
+                   <Button onClick={handleAddUser}>إضافة وإرسال دعوة</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
