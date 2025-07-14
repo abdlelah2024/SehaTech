@@ -98,7 +98,6 @@ export function UsersTab() {
     // For this prototype, we'll add the user to Firestore and then trigger the email.
     // Note: The user won't be able to log in until they are created in Firebase Auth,
     // which this client-side code doesn't do. `sendPasswordResetEmail` works for existing users.
-    // A full implementation would require a backend function.
     // As a workaround, we will assume the admin creates the user in the Firebase Console first.
     try {
       await addDoc(collection(db, "users"), { name, email, role });

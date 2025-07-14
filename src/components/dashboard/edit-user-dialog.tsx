@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import type { User, UserRole } from "@/lib/types"
+import { auth } from "@/lib/firebase"
+import { sendPasswordResetEmail } from "firebase/auth"
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -42,7 +44,7 @@ export function EditUserDialog({ isOpen, onClose, user, onUserUpdated }: EditUse
       setEmail(user.email);
       setRole(user.role);
     }
-  }, [user]);
+  }, [user, isOpen]);
 
   const handleUpdateUser = () => {
     if (!name || !email || !role) {
@@ -62,14 +64,24 @@ export function EditUserDialog({ isOpen, onClose, user, onUserUpdated }: EditUse
     };
 
     onUserUpdated(updatedUser);
-
-    toast({
-      title: "تم تحديث البيانات بنجاح",
-      description: `تم تحديث ملف المستخدم ${name}.`,
-    });
-    
-    onClose();
   };
+  
+  const handleResetPassword = async () => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "تم إرسال الرابط بنجاح",
+        description: `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${email}.`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل إرسال بريد إعادة تعيين كلمة المرور. قد لا يكون المستخدم موجودًا في نظام المصادقة."
+      })
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -108,10 +120,20 @@ export function EditUserDialog({ isOpen, onClose, user, onUserUpdated }: EditUse
               </SelectContent>
             </Select>
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
+                كلمة المرور
+              </Label>
+              <div className="col-span-3">
+                 <Button variant="outline" onClick={handleResetPassword}>
+                  إرسال رابط إعادة تعيين
+                </Button>
+              </div>
+          </div>
         </div>
         <DialogFooter>
-           <Button onClick={handleUpdateUser}>حفظ التغييرات</Button>
            <Button variant="secondary" onClick={onClose}>إلغاء</Button>
+           <Button onClick={handleUpdateUser}>حفظ التغييرات</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
