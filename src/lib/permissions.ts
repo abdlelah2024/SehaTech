@@ -76,11 +76,11 @@ const receptionistPermissions: Permissions = {
   viewReports: false,
   generateReport: false,
   viewAnalytics: false,
-  manageUsers: false,
-  addUser: false,
-  editUser: false,
-  deleteUser: false,
-  manageSettings: false,
+  manageUsers: true, // Allow receptionists to manage users
+  addUser: true,
+  editUser: true,
+  deleteUser: false, // Receptionists can't delete users
+  manageSettings: true, // Allow receptionists to access settings
   useChat: true,
   viewAuditLog: false,
 };
