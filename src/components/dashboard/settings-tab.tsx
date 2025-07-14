@@ -59,12 +59,9 @@ import { db, auth } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
+import { permissions as allPermissions, permissionDetails, PermissionCategory, PermissionKey, roleTranslations } from "@/lib/permissions"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 
-const roleTranslations: { [key in UserRole]: string } = {
-  admin: 'مدير',
-  receptionist: 'موظف استقبال',
-  doctor: 'طبيب',
-};
 
 const formFieldsConfig = {
   addDoctor: [
@@ -82,6 +79,7 @@ const formFieldsConfig = {
 };
 
 type FormKey = keyof typeof formFieldsConfig;
+
 
 export function SettingsTab() {
   const { toast } = useToast()
@@ -105,8 +103,16 @@ export function SettingsTab() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<UserRole>("receptionist")
+
+  // Permissions Management State
+  const [selectedRole, setSelectedRole] = useState<UserRole>('receptionist');
+  const [currentPermissions, setCurrentPermissions] = useState(allPermissions[selectedRole]);
   
   const permissions = usePermissions(users.find(u => u.id === authUser?.uid)?.role || 'receptionist');
+  
+  useEffect(() => {
+    setCurrentPermissions(allPermissions[selectedRole]);
+  }, [selectedRole]);
 
   useEffect(() => {
     const q = query(collection(db, "users"));
@@ -208,6 +214,44 @@ export function SettingsTab() {
      }
   };
   
+  const handlePermissionChange = (permission: PermissionKey, value: boolean) => {
+    setCurrentPermissions(prev => ({ ...prev, [permission]: value }));
+  };
+
+  const handleSavePermissions = () => {
+    // In a real app, you would save `currentPermissions` to Firestore
+    // under a 'permissions' collection with the document ID as `selectedRole`.
+    console.log(`Saving permissions for role: ${selectedRole}`, currentPermissions);
+    toast({
+      title: "تم حفظ الصلاحيات",
+      description: `تم تحديث صلاحيات دور "${roleTranslations[selectedRole]}" بنجاح (محاكاة).`
+    });
+  };
+
+  const permissionCategories = useMemo(() => {
+    const categories: { [key in PermissionCategory]: PermissionKey[] } = {
+      Dashboard: [],
+      Appointments: [],
+      Patients: [],
+      Doctors: [],
+      Billing: [],
+      Reports: [],
+      Analytics: [],
+      Users: [],
+      Settings: [],
+      Chat: [],
+      AuditLog: []
+    };
+    (Object.keys(permissionDetails) as PermissionKey[]).forEach(key => {
+      const detail = permissionDetails[key];
+      if (!categories[detail.category]) {
+        categories[detail.category] = [];
+      }
+      categories[detail.category].push(key);
+    });
+    return categories;
+  }, []);
+
   if (!permissions?.manageSettings) {
     return (
         <Card>
@@ -263,7 +307,7 @@ export function SettingsTab() {
             <CardHeader>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                <CardTitle>المستخدمون والصلاحيات</CardTitle>
+                <CardTitle>إدارة المستخدمين</CardTitle>
                 <CardDescription>إدارة حسابات المستخدمين وأدوارهم في النظام.</CardDescription>
                 </div>
                 {permissions.addUser && (
@@ -298,9 +342,9 @@ export function SettingsTab() {
                             <SelectValue placeholder="اختر دوراً" />
                             </SelectTrigger>
                             <SelectContent>
-                            <SelectItem value="admin">مدير</SelectItem>
-                            <SelectItem value="receptionist">موظف استقبال</SelectItem>
-                            <SelectItem value="doctor">طبيب</SelectItem>
+                              <SelectItem value="admin">مدير</SelectItem>
+                              <SelectItem value="receptionist">موظف استقبال</SelectItem>
+                              <SelectItem value="doctor">طبيب</SelectItem>
                             </SelectContent>
                         </Select>
                         </div>
@@ -406,99 +450,58 @@ export function SettingsTab() {
         </Card>
       )}
 
-
       <Card>
         <CardHeader>
-          <CardTitle>إدارة حقول النماذج</CardTitle>
+          <CardTitle>إدارة الصلاحيات والأدوار</CardTitle>
           <CardDescription>
-            تحكم في الحقول المطلوبة والاختيارية في نماذج الإدخال المختلفة.
+            تحكم بشكل دقيق في الصلاحيات الممنوحة لكل دور في النظام.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
            <div className="space-y-2">
-              <Label htmlFor="form-select">اختر النموذج للتعديل</Label>
-               <Select value={selectedForm} onValueChange={(value) => setSelectedForm(value as FormKey)}>
-                <SelectTrigger id="form-select" className="w-full md:w-[280px]">
-                  <SelectValue placeholder="اختر نموذجًا" />
+              <Label htmlFor="role-select">اختر الدور للتعديل</Label>
+               <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
+                <SelectTrigger id="role-select" className="w-full md:w-[280px]">
+                  <SelectValue placeholder="اختر دورًا" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="addDoctor">نموذج إضافة طبيب</SelectItem>
-                  <SelectItem value="addPatient">نموذج إضافة مريض</SelectItem>
-                  <SelectItem value="newAppointment">نموذج المواعيد الجديدة</SelectItem>
+                  <SelectItem value="admin">{roleTranslations.admin}</SelectItem>
+                  <SelectItem value="receptionist">{roleTranslations.receptionist}</SelectItem>
+                  <SelectItem value="doctor">{roleTranslations.doctor}</SelectItem>
                 </SelectContent>
               </Select>
            </div>
-           <Separator className="my-4" />
-            <div className="space-y-4">
-                {formFieldsConfig[selectedForm].map(field => (
-                  <div key={field.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <Label htmlFor={field.id} className="text-base">{field.label}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {field.required ? 'هذا الحقل مطلوب حاليًا.' : 'هذا الحقل اختياري حاليًا.'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center space-x-2 space-x-reverse">
-                        <Switch
-                          id={field.id}
-                          checked={field.required}
-                          onCheckedChange={(checked) => handleFieldRequirementChange(field.id, checked)}
-                        />
-                        <Label htmlFor={field.id}>مطلوب</Label>
+           <Accordion type="multiple" defaultValue={Object.keys(permissionCategories)} className="w-full">
+            {Object.entries(permissionCategories).map(([category, perms]) => (
+                <AccordionItem key={category} value={category}>
+                  <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
+                  <AccordionContent>
+                      <div className="space-y-4 pr-4">
+                        {(perms as PermissionKey[]).map((permKey) => (
+                           <div key={permKey} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div>
+                               <Label htmlFor={permKey} className="font-medium">{permissionDetails[permKey].label}</Label>
+                               <p className="text-xs text-muted-foreground">{permissionDetails[permKey].description}</p>
+                             </div>
+                             <Switch
+                                id={permKey}
+                                checked={currentPermissions[permKey]}
+                                onCheckedChange={(value) => handlePermissionChange(permKey, value)}
+                                disabled={selectedRole === 'admin'}
+                              />
+                           </div>
+                        ))}
                       </div>
-                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
-                         <Trash2 className="h-4 w-4" />
-                         <span className="sr-only">حذف القاعدة</span>
-                       </Button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
+                  </AccordionContent>
+                </AccordionItem>
+            ))}
+          </Accordion>
         </CardContent>
          <CardFooter className="border-t px-6 py-4">
-            <Button>إضافة حقل جديد (قيد التطوير)</Button>
+            <Button onClick={handleSavePermissions} disabled={selectedRole === 'admin'}>حفظ صلاحيات دور "{roleTranslations[selectedRole]}"</Button>
         </CardFooter>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>إعدادات الإشعارات</CardTitle>
-          <CardDescription>
-            تحكم في الإشعارات التلقائية التي يتم إرسالها للمرضى.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <Label htmlFor="appointmentReminders" className="text-base">تذكيرات المواعيد</Label>
-              <p className="text-sm text-muted-foreground">
-                إرسال رسائل تذكير للمرضى قبل مواعيدهم.
-              </p>
-            </div>
-            <Switch
-              id="appointmentReminders"
-              checked={appointmentReminders}
-              onCheckedChange={setAppointmentReminders}
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <Label htmlFor="followUpNotifications" className="text-base">تنبيهات المتابعة</Label>
-              <p className="text-sm text-muted-foreground">
-                إرسال إشعار للمريض عند حلول موعد إعادة الكشف.
-              </p>
-            </div>
-            <Switch
-              id="followUpNotifications"
-              checked={followUpNotifications}
-              onCheckedChange={setFollowUpNotifications}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>الإعدادات المالية</CardTitle>
