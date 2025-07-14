@@ -70,7 +70,7 @@ export function UsersTab() {
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("") // Note: Firebase Auth handles user creation, this is for UI demo
+  const [password, setPassword] = useState("") // Note: In a real app, you wouldn't handle passwords this way.
   const [role, setRole] = useState<UserRole>("receptionist")
   const { toast } = useToast()
 
@@ -84,7 +84,7 @@ export function UsersTab() {
   }, []);
 
   const handleAddUser = async () => {
-    if (!name || !email || !role) {
+    if (!name || !email || !role || !password) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -93,8 +93,10 @@ export function UsersTab() {
       return;
     }
 
-    // In a real app, you'd use Firebase Admin SDK on the backend to create a user.
-    // This is a client-side simulation.
+    // WARNING: This is a client-side simulation for prototyping.
+    // In a real app, you'd use a secure backend function (e.g., Firebase Cloud Function)
+    // to create a user in Firebase Authentication and then add their details to Firestore.
+    // Storing plain text passwords is a major security risk.
     try {
       await addDoc(collection(db, "users"), { name, email, role });
       toast({
@@ -123,7 +125,7 @@ export function UsersTab() {
         await updateDoc(userRef, userData);
         toast({
           title: "تم تحديث البيانات بنجاح",
-          description: `تم تحديث ملف المستخدم ${name}.`,
+          description: `تم تحديث ملف المستخدم ${updatedUser.name}.`,
         });
         setUserToEdit(null);
     } catch(e) {
@@ -175,14 +177,18 @@ export function UsersTab() {
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">الاسم</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="مثال: أحمد علي" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="user@example.com" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="password" className="text-right">كلمة المرور</Label>
+                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" placeholder="••••••••" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">الدور</Label>
+                    <Label htmlFor="role" className="text-right">الدور (الصلاحية)</Label>
                     <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
                       <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="اختر دوراً" />
@@ -238,32 +244,34 @@ export function UsersTab() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUserToEdit(user)}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">تعديل</span>
-                      </Button>
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                               <Trash2 className="h-4 w-4" />
-                               <span className="sr-only">حذف</span>
-                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف المستخدم بشكل دائم.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleUserDeleted(user.id)} className="bg-destructive hover:bg-destructive/90">
-                                نعم، قم بالحذف
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                       <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUserToEdit(user)}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">تعديل</span>
+                          </Button>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                   <Trash2 className="h-4 w-4" />
+                                   <span className="sr-only">حذف</span>
+                                 </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف المستخدم بشكل دائم.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleUserDeleted(user.id)} className="bg-destructive hover:bg-destructive/90">
+                                    نعم، قم بالحذف
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </TableCell>
                   </TableRow>
                 ))}
