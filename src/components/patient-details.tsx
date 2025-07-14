@@ -74,9 +74,15 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
           setPatientAppointments(appts);
       });
 
-      const transactionsQuery = query(collection(db, "transactions"), where("patientId", "==", patient.id), orderBy("date", "desc"));
+      const transactionsQuery = query(collection(db, "transactions"), where("patientId", "==", patient.id));
       const transactionsUnsubscribe = onSnapshot(transactionsQuery, (snapshot) => {
           const trans = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Transaction);
+           // Sort transactions locally
+          trans.sort((a, b) => {
+              const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+              const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+              return dateB.getTime() - dateA.getTime();
+          });
           setPatientTransactions(trans);
       });
 
