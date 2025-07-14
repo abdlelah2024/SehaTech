@@ -48,11 +48,11 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
   };
 
   const handleCreateDoctor = () => {
-    if (!name || !specialty || !price || !returnDays || availableDays.length === 0) {
+    if (!name || !specialty) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
-        description: "الرجاء تعبئة جميع الحقول المطلوبة.",
+        description: "الاسم والتخصص حقول مطلوبة.",
       });
       return;
     }
@@ -60,9 +60,9 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
     const newDoctor: Omit<Doctor, 'id'> = {
       name,
       specialty,
-      servicePrice: parseFloat(price),
-      freeReturnDays: parseInt(returnDays, 10),
-      availableDays: availableDays.map(dayId => weekDays.find(d => d.id === dayId)!.label),
+      servicePrice: price ? parseFloat(price) : undefined,
+      freeReturnDays: returnDays ? parseInt(returnDays, 10) : undefined,
+      availableDays: availableDays.length > 0 ? availableDays.map(dayId => weekDays.find(d => d.id === dayId)!.label) : undefined,
       image: `https://placehold.co/100x100.png?text=${name.charAt(0)}`,
       // These are placeholders, a more robust system would calculate this
       nextAvailable: 'غداً، 10:00 ص',
@@ -90,19 +90,19 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
         <DialogHeader>
           <DialogTitle>إضافة طبيب جديد</DialogTitle>
           <DialogDescription>
-            أدخل بيانات الطبيب الجديد. سيتمكن من تسجيل الدخول لاحقاً.
+            أدخل بيانات الطبيب الجديد. الحقول المعلمة بنجمة (*) مطلوبة.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              الاسم
+              الاسم <span className="text-destructive">*</span>
             </Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="مثال: علي الأحمد" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="specialty" className="text-right">
-              التخصص
+              التخصص <span className="text-destructive">*</span>
             </Label>
             <Input id="specialty" value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="col-span-3" placeholder="مثال: أمراض القلب" />
           </div>
@@ -110,13 +110,13 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
             <Label htmlFor="price" className="text-right">
               سعر الكشفية (﷼)
             </Label>
-            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="5000" />
+            <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="5000 (اختياري)" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="returnDays" className="text-right">
               إعادة مجانية (أيام)
             </Label>
-            <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3" placeholder="14" />
+            <Input id="returnDays" type="number" value={returnDays} onChange={(e) => setReturnDays(e.target.value)} className="col-span-3" placeholder="14 (اختياري)" />
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label className="text-right pt-2">
