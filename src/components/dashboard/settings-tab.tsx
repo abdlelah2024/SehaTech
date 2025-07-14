@@ -22,6 +22,24 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { Separator } from "../ui/separator"
+import { Trash2 } from "lucide-react"
+
+// Mock data for form fields. In a real app, this would come from a config or database.
+const formFieldsConfig = {
+  addDoctor: [
+    { id: 'servicePrice', label: 'سعر الكشفية', required: false },
+    { id: 'freeReturnDays', label: 'إعادة مجانية (أيام)', required: false },
+    { id: 'availableDays', label: 'أيام الدوام', required: true },
+  ],
+  addPatient: [
+    { id: 'dob', label: 'تاريخ الميلاد', required: true },
+    { id: 'address', label: 'العنوان', required: false },
+  ]
+};
+
+type FormKey = keyof typeof formFieldsConfig;
+
 
 export function SettingsTab() {
   const { toast } = useToast()
@@ -33,6 +51,7 @@ export function SettingsTab() {
   const [appointmentReminders, setAppointmentReminders] = useState(true)
   const [followUpNotifications, setFollowUpNotifications] = useState(false)
   const [billingCurrency, setBillingCurrency] = useState("YER")
+  const [selectedForm, setSelectedForm] = useState<FormKey>('addDoctor');
 
   const handleSaveChanges = () => {
     // In a real app, you would save these settings to your database (e.g., Firestore)
@@ -47,6 +66,15 @@ export function SettingsTab() {
     toast({
       title: "تم حفظ الإعدادات",
       description: "تم تحديث إعدادات النظام بنجاح.",
+    })
+  }
+  
+  const handleFieldRequirementChange = (fieldId: string, required: boolean) => {
+    // This is a mock function. In a real app, you would update the database.
+    console.log(`Setting field ${fieldId} in form ${selectedForm} to required=${required}`);
+     toast({
+      title: `تم تحديث الحقل`,
+      description: `تم تغيير متطلبات الحقل بنجاح (محاكاة).`,
     })
   }
 
@@ -85,6 +113,60 @@ export function SettingsTab() {
             />
           </div>
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>إدارة حقول النماذج</CardTitle>
+          <CardDescription>
+            تحكم في الحقول المطلوبة والاختيارية في نماذج الإدخال المختلفة.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+           <div className="space-y-2">
+              <Label htmlFor="form-select">اختر النموذج للتعديل</Label>
+               <Select value={selectedForm} onValueChange={(value) => setSelectedForm(value as FormKey)}>
+                <SelectTrigger id="form-select" className="w-full md:w-[280px]">
+                  <SelectValue placeholder="اختر نموذجًا" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="addDoctor">نموذج إضافة طبيب</SelectItem>
+                  <SelectItem value="addPatient">نموذج إضافة مريض</SelectItem>
+                </SelectContent>
+              </Select>
+           </div>
+           <Separator className="my-4" />
+            <div className="space-y-4">
+                {formFieldsConfig[selectedForm].map(field => (
+                  <div key={field.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <Label htmlFor={field.id} className="text-base">{field.label}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {field.required ? 'هذا الحقل مطلوب حاليًا.' : 'هذا الحقل اختياري حاليًا.'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Switch
+                          id={field.id}
+                          checked={field.required}
+                          onCheckedChange={(checked) => handleFieldRequirementChange(field.id, checked)}
+                        />
+                        <Label htmlFor={field.id}>مطلوب</Label>
+                      </div>
+                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
+                         <Trash2 className="h-4 w-4" />
+                         <span className="sr-only">حذف القاعدة</span>
+                       </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+        </CardContent>
+         <CardFooter className="border-t px-6 py-4">
+            <Button>إضافة حقل جديد (قيد التطوير)</Button>
+        </CardFooter>
       </Card>
       
       <Card>
@@ -147,7 +229,7 @@ export function SettingsTab() {
           </div>
         </CardContent>
          <CardFooter className="border-t px-6 py-4">
-            <Button onClick={handleSaveChanges}>حفظ التغييرات</Button>
+            <Button onClick={handleSaveChanges}>حفظ كل الإعدادات</Button>
         </CardFooter>
       </Card>
     </div>
