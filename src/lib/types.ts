@@ -64,6 +64,12 @@ export interface User {
   role: UserRole;
   status?: 'online' | 'offline';
   createdAt?: any;
+  presence?: UserPresence;
+}
+
+export interface UserPresence {
+    state: 'online' | 'offline';
+    last_changed: number; // Firestore server timestamp
 }
 
 export interface Message {

@@ -39,15 +39,16 @@ import { Badge } from "@/components/ui/badge"
 import { useState, useMemo, useEffect } from "react"
 import type { Appointment, User, Transaction, Patient, Doctor } from "@/lib/types"
 import { LocalizedDateTime } from "../localized-date-time"
-import { format, isToday, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns"
+import { format, isToday, parseISO, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from "date-fns"
 import { ar } from "date-fns/locale"
 import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar } from "../ui/calendar"
 import type { DateRange } from "react-day-picker"
 import { useToast } from "@/hooks/use-toast"
-import { db } from "@/lib/firebase"
+import { db, rtdb } from "@/lib/firebase"
 import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
+import { ref, onValue } from "firebase/database"
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -102,7 +103,22 @@ export function Overview() {
     const unsubTransactions = onSnapshot(query(collection(db, "transactions")), snap => setTransactionsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Transaction)));
     const unsubPatients = onSnapshot(query(collection(db, "patients")), snap => setPatientsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Patient)));
     const unsubDoctors = onSnapshot(query(collection(db, "doctors")), snap => setDoctorsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Doctor)));
-    const unsubUsers = onSnapshot(query(collection(db, "users")), snap => setUsersState(snap.docs.map(d => ({id: d.id, ...d.data()}) as User)));
+    
+    // Combine Firestore user data with Realtime Database presence data
+    const unsubUsers = onSnapshot(query(collection(db, "users")), (snap) => {
+        const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
+
+        const presenceRef = ref(rtdb, 'users');
+        onValue(presenceRef, (snapshot) => {
+            const presenceData = snapshot.val();
+            const combinedUsers = firestoreUsers.map(user => ({
+                ...user,
+                presence: presenceData?.[user.id]
+            }));
+            setUsersState(combinedUsers);
+        });
+    });
+
     return () => {
       unsubAppointments();
       unsubTransactions();
@@ -454,10 +470,19 @@ export function Overview() {
                                     <p className="text-xs text-muted-foreground">{user.role}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-green-600">
-                               <Circle className="h-3 w-3 fill-current" />
-                               <span>متصل</span>
-                            </div>
+                            {user.presence?.state === 'online' ? (
+                                <div className="flex items-center gap-2 text-green-600">
+                                    <Circle className="h-3 w-3 fill-current" />
+                                    <span>متصل</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Circle className="h-3 w-3 fill-current" />
+                                    <span>
+                                        {user.presence?.last_changed ? `آخر ظهور: ${formatDistanceToNow(new Date(user.presence.last_changed), { addSuffix: true, locale: ar })}` : 'غير متصل'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     ))}
                     {usersState.length === 0 && (
