@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -23,6 +22,12 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import type { Patient } from "@/lib/types"
+import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { ar } from "date-fns/locale"
+import { Calendar } from "./ui/calendar"
 
 interface EditPatientDialogProps {
   isOpen: boolean;
@@ -33,7 +38,7 @@ interface EditPatientDialogProps {
 
 export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }: EditPatientDialogProps) {
   const [name, setName] = useState(patient.name);
-  const [age, setAge] = useState<string>(patient.age?.toString() || '');
+  const [dob, setDob] = useState<Date | undefined>(patient.dob ? new Date(patient.dob) : undefined);
   const [phone, setPhone] = useState(patient.phone || '');
   const [address, setAddress] = useState(patient.address || '');
   const [gender, setGender] = useState<Patient['gender']>(patient.gender);
@@ -42,7 +47,7 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
   useEffect(() => {
     if (patient) {
       setName(patient.name);
-      setAge(patient.age?.toString() || '');
+      setDob(patient.dob ? new Date(patient.dob) : undefined);
       setPhone(patient.phone || '');
       setAddress(patient.address || '');
       setGender(patient.gender);
@@ -50,7 +55,7 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
   }, [patient, isOpen]);
 
   const handleUpdatePatient = () => {
-    if (!name || !phone || !age || !gender) {
+    if (!name || !phone || !dob || !gender) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -62,7 +67,7 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
     const updatedPatient: Patient = {
       ...patient,
       name,
-      age: Number(age),
+      dob: format(dob, "yyyy-MM-dd"),
       phone,
       address,
       gender,
@@ -91,8 +96,33 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
             <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="age" className="text-right">العمر</Label>
-            <Input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} className="col-span-3" />
+            <Label htmlFor="dob" className="text-right">تاريخ الميلاد</Label>
+             <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "col-span-3 justify-start text-left font-normal",
+                    !dob && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  {dob ? format(dob, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={dob}
+                  onSelect={setDob}
+                  initialFocus
+                  locale={ar}
+                  captionLayout="dropdown-buttons"
+                  fromYear={1930}
+                  toYear={new Date().getFullYear()}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="gender" className="text-right">الجنس</Label>

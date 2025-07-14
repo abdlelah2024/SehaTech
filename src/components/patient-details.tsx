@@ -45,6 +45,18 @@ const statusTranslations: { [key: string]: string } = {
   'Follow-up': 'إعادة'
 };
 
+function calculateAge(dob: string | undefined): number | string {
+  if (!dob) return 'N/A';
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetailsProps) {
   const [summary, setSummary] = useState('');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -83,7 +95,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
         const input: SummarizePatientHistoryInput = {
           patient: {
             name: patient.name,
-            age: patient.age,
+            age: calculateAge(patient.dob) as number,
             gender: patient.gender,
           },
           appointments: patientAppointments.map(a => ({
@@ -214,7 +226,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                     <div className="space-y-3 text-sm">
                        <div className="flex items-center gap-3">
                             <Cake className="h-4 w-4 text-muted-foreground" />
-                            <span>العمر: {patient.age} سنة</span>
+                            <span>العمر: {calculateAge(patient.dob)} سنة</span>
                        </div>
                        <div className="flex items-center gap-3">
                             <VenetianMask className="h-4 w-4 text-muted-foreground" />

@@ -3,7 +3,7 @@
 export interface Patient {
   id: string;
   name: string;
-  age: number;
+  dob?: string; // Date of birth as 'YYYY-MM-DD'
   gender: 'ذكر' | 'أنثى' | 'آخر';
   phone: string;
   address: string;
@@ -86,5 +86,3 @@ export interface AuditLog {
     section: string;
     timestamp: string;
 }
-
-    

@@ -43,11 +43,22 @@ import { AppointmentScheduler } from "../appointment-scheduler"
 import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
 import type { Patient } from "@/lib/types"
-import { EditPatientDialog } from "./edit-patient-dialog"
+import { EditPatientDialog } from "../edit-patient-dialog"
 import { UserPlus, Search, Edit, Trash2, X } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+
+function calculateAge(dob: string): number {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 export function PatientsTab() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -63,8 +74,8 @@ export function PatientsTab() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const pats = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data() as Omit<Patient, 'id'>, // Explicitly cast data and then createdAt below
-      })).map(patient => ({ ...patient, createdAt: patient.createdAt as firebase.firestore.Timestamp }) as Patient);
+        ...doc.data(),
+      }) as Patient);
       setPatients(pats);
     });
     return () => unsubscribe();
@@ -92,7 +103,8 @@ export function PatientsTab() {
         toast({
             title: "تم إنشاء ملف المريض بنجاح!",
         });
-        setSelectedPatientForProfile({ id: docRef.id, ...newPatientData });
+        const createdPatient = { id: docRef.id, ...newPatientData };
+        setSelectedPatientForProfile(createdPatient as Patient);
     } catch (e) {
         console.error("Error adding document: ", e);
         toast({
@@ -218,7 +230,7 @@ export function PatientsTab() {
                         <span className="font-medium">{patient.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{patient.age}</TableCell>
+                    <TableCell>{patient.dob ? calculateAge(patient.dob) : 'N/A'}</TableCell>
                     <TableCell className="hidden sm:table-cell">{patient.gender}</TableCell>
                     <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
                     <TableCell className="text-center">

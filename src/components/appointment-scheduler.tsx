@@ -66,7 +66,7 @@ export function AppointmentScheduler({
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   const [newPatientName, setNewPatientName] = useState("")
-  const [newPatientAge, setNewPatientAge] = useState<string>('');
+  const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientGender, setNewPatientGender] = useState<Patient['gender']>("ذكر")
   const [newPatientAddress, setNewPatientAddress] = useState("")
@@ -186,11 +186,11 @@ export function AppointmentScheduler({
   }
 
   const handleCreatePatient = () => {
-    if (!newPatientName || !newPatientPhone || !newPatientAge) {
+    if (!newPatientName || !newPatientPhone || !newPatientDob) {
        toast({
         variant: "destructive",
         title: "معلومات ناقصة",
-        description: "يرجى تعبئة جميع الحقول المطلوبة (الاسم، الهاتف، العمر).",
+        description: "يرجى تعبئة جميع الحقول المطلوبة (الاسم، الهاتف، تاريخ الميلاد).",
       });
       return;
     }
@@ -198,7 +198,7 @@ export function AppointmentScheduler({
     if (onPatientCreated) {
         const newPatient: Omit<Patient, 'id'> = {
             name: newPatientName,
-            age: Number(newPatientAge),
+            dob: format(newPatientDob, "yyyy-MM-dd"),
             gender: newPatientGender,
             phone: newPatientPhone,
             address: newPatientAddress,
@@ -225,7 +225,7 @@ export function AppointmentScheduler({
   
   const resetAndClose = () => {
     setNewPatientName("");
-    setNewPatientAge('');
+    setNewPatientDob(undefined);
     setNewPatientPhone("");
     setNewPatientAddress("");
     setNewPatientGender("ذكر");
@@ -272,8 +272,33 @@ export function AppointmentScheduler({
               <Input id="phone" type="tel" placeholder="777xxxxxx" className="col-span-3" value={newPatientPhone} onChange={(e) => setNewPatientPhone(e.target.value)} />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="age" className="text-right">العمر</Label>
-                <Input id="age" type="number" placeholder="30" className="col-span-3" value={newPatientAge} onChange={(e) => setNewPatientAge(e.target.value)} />
+                <Label htmlFor="dob" className="text-right">تاريخ الميلاد</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "col-span-3 justify-start text-left font-normal",
+                        !newPatientDob && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="ml-2 h-4 w-4" />
+                      {newPatientDob ? format(newPatientDob, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={newPatientDob}
+                      onSelect={setNewPatientDob}
+                      initialFocus
+                      locale={ar}
+                      captionLayout="dropdown-buttons"
+                      fromYear={1930}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="gender" className="text-right">الجنس</Label>
