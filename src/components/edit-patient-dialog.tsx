@@ -33,21 +33,21 @@ interface EditPatientDialogProps {
 
 export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }: EditPatientDialogProps) {
   const [name, setName] = useState(patient.name);
-  const [age, setAge] = useState<number | undefined>(patient.age);
-  const [phone, setPhone] = useState(patient.phone);
-  const [address, setAddress] = useState(patient.address);
+  const [age, setAge] = useState<string>(patient.age?.toString() || '');
+  const [phone, setPhone] = useState(patient.phone || '');
+  const [address, setAddress] = useState(patient.address || '');
   const [gender, setGender] = useState<Patient['gender']>(patient.gender);
   const { toast } = useToast();
 
   useEffect(() => {
     if (patient) {
       setName(patient.name);
-      setAge(patient.age);
-      setPhone(patient.phone);
-      setAddress(patient.address);
+      setAge(patient.age?.toString() || '');
+      setPhone(patient.phone || '');
+      setAddress(patient.address || '');
       setGender(patient.gender);
     }
-  }, [patient]);
+  }, [patient, isOpen]);
 
   const handleUpdatePatient = () => {
     if (!name || !phone || !age || !gender) {
@@ -62,7 +62,7 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
     const updatedPatient: Patient = {
       ...patient,
       name,
-      age,
+      age: Number(age),
       phone,
       address,
       gender,
@@ -92,7 +92,7 @@ export function EditPatientDialog({ isOpen, onClose, patient, onPatientUpdated }
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="age" className="text-right">العمر</Label>
-            <Input id="age" type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} className="col-span-3" />
+            <Input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="gender" className="text-right">الجنس</Label>

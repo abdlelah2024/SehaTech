@@ -66,7 +66,7 @@ export function AppointmentScheduler({
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   const [newPatientName, setNewPatientName] = useState("")
-  const [newPatientAge, setNewPatientAge] = useState<number | undefined>();
+  const [newPatientAge, setNewPatientAge] = useState<string>('');
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientGender, setNewPatientGender] = useState<Patient['gender']>("ذكر")
   const [newPatientAddress, setNewPatientAddress] = useState("")
@@ -198,7 +198,7 @@ export function AppointmentScheduler({
     if (onPatientCreated) {
         const newPatient: Omit<Patient, 'id'> = {
             name: newPatientName,
-            age: newPatientAge,
+            age: Number(newPatientAge),
             gender: newPatientGender,
             phone: newPatientPhone,
             address: newPatientAddress,
@@ -225,7 +225,7 @@ export function AppointmentScheduler({
   
   const resetAndClose = () => {
     setNewPatientName("");
-    setNewPatientAge(undefined);
+    setNewPatientAge('');
     setNewPatientPhone("");
     setNewPatientAddress("");
     setNewPatientGender("ذكر");
@@ -273,7 +273,7 @@ export function AppointmentScheduler({
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="age" className="text-right">العمر</Label>
-                <Input id="age" type="number" placeholder="30" className="col-span-3" value={newPatientAge} onChange={(e) => setNewPatientAge(Number(e.target.value))} />
+                <Input id="age" type="number" placeholder="30" className="col-span-3" value={newPatientAge} onChange={(e) => setNewPatientAge(e.target.value)} />
               </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="gender" className="text-right">الجنس</Label>
