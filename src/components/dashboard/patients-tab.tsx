@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -48,6 +47,9 @@ import { UserPlus, Search, Edit, Trash2, X } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { logAuditEvent } from "@/lib/audit-log-service"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
 
 function calculateAge(dob: string): number {
   const birthDate = new Date(dob);
@@ -61,6 +63,7 @@ function calculateAge(dob: string): number {
 }
 
 export function PatientsTab() {
+  const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGender, setFilterGender] = useState("all")
   const [selectedPatientForProfile, setSelectedPatientForProfile] = useState<Patient | null>(null)
@@ -95,6 +98,7 @@ export function PatientsTab() {
   }, []);
   
   const handlePatientCreated = async (newPatientData: Omit<Patient, 'id'>) => {
+    if (!currentUser) return;
     try {
         const docRef = await addDoc(collection(db, "patients"), {
             ...newPatientData,
@@ -105,6 +109,7 @@ export function PatientsTab() {
         });
         const createdPatient = { id: docRef.id, ...newPatientData };
         setSelectedPatientForProfile(createdPatient as Patient);
+        await logAuditEvent('إضافة مريض', { patientId: docRef.id, patientName: newPatientData.name }, currentUser.uid);
     } catch (e) {
         console.error("Error adding document: ", e);
         toast({
@@ -116,6 +121,7 @@ export function PatientsTab() {
   };
 
   const handlePatientUpdated = async (updatedPatient: Patient) => {
+    if (!currentUser) return;
     const { id, ...patientData } = updatedPatient;
     if (!id) return;
     const patientRef = doc(db, "patients", id);
@@ -126,16 +132,19 @@ export function PatientsTab() {
         description: `تم تحديث ملف المريض ${updatedPatient.name}.`,
       });
       setSelectedPatientForEdit(null);
+      await logAuditEvent('تعديل مريض', { patientId: id, patientName: updatedPatient.name }, currentUser.uid);
     } catch (e) {
       console.error("Error updating document: ", e);
       toast({ variant: "destructive", title: "خطأ", description: "لم نتمكن من تحديث بيانات المريض." });
     }
   };
 
-  const handlePatientDeleted = async (patientId: string) => {
+  const handlePatientDeleted = async (patient: Patient) => {
+    if (!currentUser) return;
     try {
-      await deleteDoc(doc(db, "patients", patientId));
+      await deleteDoc(doc(db, "patients", patient.id));
       toast({ title: "تم الحذف بنجاح", description: "تم حذف ملف المريض من النظام." });
+      await logAuditEvent('حذف مريض', { patientId: patient.id, patientName: patient.name }, currentUser.uid);
     } catch (e) {
       console.error("Error deleting document: ", e);
       toast({ variant: "destructive", title: "خطأ!", description: "لم نتمكن من حذف المريض." });
@@ -256,7 +265,7 @@ export function PatientsTab() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handlePatientDeleted(patient.id)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handlePatientDeleted(patient)} className="bg-destructive hover:bg-destructive/90">
                                   نعم، قم بالحذف
                                 </AlertDialogAction>
                               </AlertDialogFooter>

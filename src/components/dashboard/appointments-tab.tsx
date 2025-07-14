@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -43,6 +42,9 @@ import { LocalizedDateTime } from "../localized-date-time"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, doc, updateDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+import { logAuditEvent } from "@/lib/audit-log-service"
 
 const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
 const statusTranslations: { [key: string]: string } = {
@@ -61,6 +63,7 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
 
 
 export function AppointmentsTab({ }: {}) {
+  const [currentUser] = useAuthState(auth);
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,8 +92,9 @@ export function AppointmentsTab({ }: {}) {
 
 
   const handleAppointmentCreated = async (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
+    if (!currentUser) return;
      try {
-        await addDoc(collection(db, "appointments"), {
+        const docRef = await addDoc(collection(db, "appointments"), {
             ...newAppointmentData,
             status: 'Scheduled',
         });
@@ -98,6 +102,7 @@ export function AppointmentsTab({ }: {}) {
             title: "تم حجز الموعد بنجاح!",
             description: `تم حجز موعد جديد.`,
         });
+        await logAuditEvent('إنشاء موعد', { appointmentId: docRef.id, patientName: newAppointmentData.patientName }, currentUser.uid);
     } catch (e) {
         console.error("Error adding document: ", e);
         toast({
@@ -116,6 +121,7 @@ export function AppointmentsTab({ }: {}) {
   };
 
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
+    if (!currentUser) return;
     const appointmentRef = doc(db, "appointments", appointmentId);
     const appointment = appointments.find(a => a.id === appointmentId);
     
@@ -132,7 +138,7 @@ export function AppointmentsTab({ }: {}) {
         if (newStatus === 'Completed') {
             const doctor = doctors.find(d => d.id === appointment.doctorId);
             if (doctor && doctor.servicePrice) {
-                await addDoc(collection(db, "transactions"), {
+                const transactionRef = await addDoc(collection(db, "transactions"), {
                     patientId: appointment.patientId,
                     patientName: appointment.patientName,
                     date: serverTimestamp(),
@@ -141,6 +147,7 @@ export function AppointmentsTab({ }: {}) {
                     service: `${doctor.specialty} Consultation`,
                 });
                 toastDescription += ` وتم إنشاء فاتورة بمبلغ ${doctor.servicePrice} ﷼ تلقائياً.`;
+                await logAuditEvent('إنشاء فاتورة (تلقائي)', { transactionId: transactionRef.id, patientName: appointment.patientName, amount: doctor.servicePrice }, currentUser.uid);
             } else {
                  toastDescription += ` (لم يتم إنشاء فاتورة لعدم تحديد سعر خدمة للطبيب).`;
             }
@@ -150,6 +157,8 @@ export function AppointmentsTab({ }: {}) {
             title: "تم تحديث الحالة بنجاح",
             description: toastDescription
         });
+        await logAuditEvent('تحديث حالة موعد', { appointmentId, newStatus }, currentUser.uid);
+
     } catch (e) {
          console.error("Error updating document: ", e);
          toast({

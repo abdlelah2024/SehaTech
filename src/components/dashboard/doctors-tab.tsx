@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -40,8 +39,12 @@ import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+import { logAuditEvent } from "@/lib/audit-log-service"
 
 export function DoctorsTab() {
+  const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -77,12 +80,14 @@ export function DoctorsTab() {
   }
   
   const handleDoctorCreated = async (newDoctor: Omit<Doctor, 'id'>) => {
+    if (!currentUser) return;
     try {
-      await addDoc(collection(db, "doctors"), newDoctor);
+      const docRef = await addDoc(collection(db, "doctors"), newDoctor);
       toast({
         title: "تمت إضافة الطبيب بنجاح",
         description: `تم إضافة د. ${newDoctor.name} إلى النظام.`,
       });
+      await logAuditEvent('إضافة طبيب', { doctorId: docRef.id, doctorName: newDoctor.name }, currentUser.uid);
     } catch (e) {
       console.error("Error adding document: ", e);
       toast({
@@ -94,6 +99,7 @@ export function DoctorsTab() {
   };
 
   const handleDoctorUpdated = async (updatedDoctor: Doctor) => {
+    if (!currentUser) return;
     const { id, ...doctorData } = updatedDoctor;
     const doctorRef = doc(db, "doctors", id);
     try {
@@ -103,6 +109,7 @@ export function DoctorsTab() {
         description: `تم تحديث ملف د. ${updatedDoctor.name}.`,
       });
       setDoctorToEdit(null);
+      await logAuditEvent('تعديل طبيب', { doctorId: id, doctorName: updatedDoctor.name }, currentUser.uid);
     } catch (e) {
       console.error("Error updating document: ", e);
        toast({
@@ -113,13 +120,15 @@ export function DoctorsTab() {
     }
   };
   
-  const handleDoctorDeleted = async (doctorId: string) => {
+  const handleDoctorDeleted = async (doctor: Doctor) => {
+    if (!currentUser) return;
      try {
-       await deleteDoc(doc(db, "doctors", doctorId));
+       await deleteDoc(doc(db, "doctors", doctor.id));
        toast({
           title: "تم الحذف بنجاح",
           description: "تم حذف ملف الطبيب من النظام.",
        });
+       await logAuditEvent('حذف طبيب', { doctorId: doctor.id, doctorName: doctor.name }, currentUser.uid);
      } catch(e) {
         console.error("Error deleting document: ", e);
         toast({
@@ -215,7 +224,7 @@ export function DoctorsTab() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDoctorDeleted(doctor.id)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handleDoctorDeleted(doctor)} className="bg-destructive hover:bg-destructive/90">
                                   نعم، قم بالحذف
                                 </AlertDialogAction>
                               </AlertDialogFooter>

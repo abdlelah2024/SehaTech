@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -39,8 +38,12 @@ import { Sparkles, Loader2, Search } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, where, getDocs } from "firebase/firestore"
 import { LocalizedDateTime } from "../localized-date-time";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
+import { logAuditEvent } from "@/lib/audit-log-service";
 
 export function BillingTab({ }: {}) {
+  const [currentUser] = useAuthState(auth);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,7 +73,7 @@ export function BillingTab({ }: {}) {
   }, []);
 
   const handleRecordTransaction = async () => {
-    if (!selectedPatientId || !amount || !service) {
+    if (!selectedPatientId || !amount || !service || !currentUser) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -83,7 +86,7 @@ export function BillingTab({ }: {}) {
     if (!patient) return;
 
     try {
-        await addDoc(collection(db, "transactions"), {
+        const docRef = await addDoc(collection(db, "transactions"), {
             patientId: selectedPatientId,
             patientName: patient.name,
             date: serverTimestamp(),
@@ -95,6 +98,7 @@ export function BillingTab({ }: {}) {
           title: "تم تسجيل الفاتورة",
           description: `تم تسجيل فاتورة بمبلغ ${amount} لـ ${patient.name}.`,
         });
+        await logAuditEvent('إنشاء فاتورة (يدوي)', { transactionId: docRef.id, patientName: patient.name, amount }, currentUser.uid);
         setIsDialogOpen(false);
     } catch(e) {
         console.error("Error adding transaction:", e);

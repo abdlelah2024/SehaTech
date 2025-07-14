@@ -1,5 +1,4 @@
 
-
 export interface Patient {
   id: string;
   name: string;
@@ -86,9 +85,9 @@ export interface Conversation {
 
 export interface AuditLog {
     id: string;
-    user: string;
-    userRole: UserRole;
+    userId: string;
     action: string;
+    details: Record<string, any>;
     section: string;
-    timestamp: string;
+    timestamp: any; // To support Firestore serverTimestamp
 }

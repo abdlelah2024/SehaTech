@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { Separator } from "../ui/separator"
 import { Trash2, Edit, Search } from "lucide-react"
 import {
   Table,
@@ -61,25 +60,7 @@ import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { permissions as allPermissions, permissionDetails, PermissionCategory, PermissionKey, roleTranslations } from "@/lib/permissions"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
-
-
-const formFieldsConfig = {
-  addDoctor: [
-    { id: 'servicePrice', label: 'سعر الكشفية', required: false },
-    { id: 'freeReturnDays', label: 'إعادة مجانية (أيام)', required: false },
-    { id: 'availableDays', label: 'أيام الدوام', required: true },
-  ],
-  addPatient: [
-    { id: 'dob', label: 'تاريخ الميلاد', required: true },
-    { id: 'address', label: 'العنوان', required: false },
-  ],
-  newAppointment: [
-    { id: 'notes', label: 'ملاحظات الموعد', required: false },
-  ]
-};
-
-type FormKey = keyof typeof formFieldsConfig;
-
+import { logAuditEvent } from "@/lib/audit-log-service"
 
 export function SettingsTab() {
   const { toast } = useToast()
@@ -88,10 +69,6 @@ export function SettingsTab() {
   const [clinicName, setClinicName] = useState("مركز صحة تك الطبي")
   const [clinicAddress, setClinicAddress] = useState("صنعاء، شارع الخمسين")
   const [clinicPhone, setClinicPhone] = useState("01-555-555")
-  const [appointmentReminders, setAppointmentReminders] = useState(true)
-  const [followUpNotifications, setFollowUpNotifications] = useState(false)
-  const [billingCurrency, setBillingCurrency] = useState("YER")
-  const [selectedForm, setSelectedForm] = useState<FormKey>('addDoctor');
 
   // User Management State
   const [authUser] = useAuthState(auth);
@@ -130,31 +107,23 @@ export function SettingsTab() {
     );
   }, [users, searchTerm]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
+    if (!authUser) return;
+    // In a real app, you would save these to a 'settings' collection in Firestore.
     console.log("Saving settings...", {
       clinicName,
       clinicAddress,
       clinicPhone,
-      appointmentReminders,
-      followUpNotifications,
-      billingCurrency,
     })
     toast({
       title: "تم حفظ الإعدادات",
       description: "تم تحديث إعدادات النظام بنجاح.",
-    })
+    });
+     await logAuditEvent('تحديث الإعدادات العامة', { clinicName, clinicAddress }, authUser.uid);
   }
 
-  const handleFieldRequirementChange = (fieldId: string, required: boolean) => {
-    console.log(`Setting field ${fieldId} in form ${selectedForm} to required=${required}`);
-     toast({
-      title: `تم تحديث الحقل`,
-      description: `تم تغيير متطلبات الحقل بنجاح (محاكاة).`,
-    })
-  }
-  
   const handleAddUser = async () => {
-    if (!name || !email || !role || !password) {
+    if (!name || !email || !role || !password || !authUser) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -164,12 +133,14 @@ export function SettingsTab() {
     }
     
     try {
-      await addDoc(collection(db, "users"), { name, email, role, createdAt: serverTimestamp() });
+      // This is a simulation. For a real app, you would use a Cloud Function to securely create a user.
+      const docRef = await addDoc(collection(db, "users"), { name, email, role, createdAt: serverTimestamp() });
       
       toast({
         title: "تمت إضافة المستخدم بنجاح (محاكاة)",
         description: `تمت إضافة ${name} إلى قاعدة البيانات. تأكد من إنشائه في نظام المصادقة بكلمة المرور المحددة.`,
       });
+      await logAuditEvent('إضافة مستخدم', { newUserId: docRef.id, newUserEmail: email, newUserName: name }, authUser.uid);
       resetAddDialog();
     } catch(e: any) {
       console.error(e);
@@ -186,6 +157,7 @@ export function SettingsTab() {
   }
 
   const handleUserUpdated = async (updatedUser: User) => {
+    if (!authUser) return;
     const { id, ...userData } = updatedUser;
     const userRef = doc(db, "users", id);
     try {
@@ -195,19 +167,22 @@ export function SettingsTab() {
           description: `تم تحديث ملف المستخدم ${updatedUser.name}.`,
         });
         setUserToEdit(null);
+        await logAuditEvent('تعديل مستخدم', { updatedUserId: id, updatedUserName: updatedUser.name }, authUser.uid);
     } catch(e) {
         console.error(e);
         toast({ variant: "destructive", title: "خطأ", description: "فشل تحديث المستخدم."});
     }
   };
   
-  const handleUserDeleted = async (userId: string) => {
+  const handleUserDeleted = async (userToDelete: User) => {
+    if (!authUser) return;
      try {
-       await deleteDoc(doc(db, "users", userId));
+       await deleteDoc(doc(db, "users", userToDelete.id));
        toast({
           title: "تم الحذف بنجاح",
           description: "تم حذف المستخدم من النظام.",
        });
+       await logAuditEvent('حذف مستخدم', { deletedUserId: userToDelete.id, deletedUserName: userToDelete.name }, authUser.uid);
      } catch(e) {
         console.error(e);
         toast({ variant: "destructive", title: "خطأ", description: "فشل حذف المستخدم."});
@@ -218,7 +193,8 @@ export function SettingsTab() {
     setCurrentPermissions(prev => ({ ...prev, [permission]: value }));
   };
 
-  const handleSavePermissions = () => {
+  const handleSavePermissions = async () => {
+    if (!authUser) return;
     // In a real app, you would save `currentPermissions` to Firestore
     // under a 'permissions' collection with the document ID as `selectedRole`.
     console.log(`Saving permissions for role: ${selectedRole}`, currentPermissions);
@@ -226,6 +202,7 @@ export function SettingsTab() {
       title: "تم حفظ الصلاحيات",
       description: `تم تحديث صلاحيات دور "${roleTranslations[selectedRole]}" بنجاح (محاكاة).`
     });
+     await logAuditEvent('تحديث الصلاحيات', { role: selectedRole }, authUser.uid);
   };
 
   const permissionCategories = useMemo(() => {
@@ -300,6 +277,9 @@ export function SettingsTab() {
             />
           </div>
         </CardContent>
+         <CardFooter className="border-t px-6 py-4">
+            <Button onClick={handleSaveChanges}>حفظ الإعدادات العامة</Button>
+        </CardFooter>
       </Card>
       
        {permissions.manageUsers && (
@@ -417,7 +397,7 @@ export function SettingsTab() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleUserDeleted(user.id)} className="bg-destructive hover:bg-destructive/90">
+                                        <AlertDialogAction onClick={() => handleUserDeleted(user)} className="bg-destructive hover:bg-destructive/90">
                                         نعم، قم بالحذف
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -499,33 +479,6 @@ export function SettingsTab() {
         </CardContent>
          <CardFooter className="border-t px-6 py-4">
             <Button onClick={handleSavePermissions} disabled={selectedRole === 'admin'}>حفظ صلاحيات دور "{roleTranslations[selectedRole]}"</Button>
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>الإعدادات المالية</CardTitle>
-          <CardDescription>
-            إدارة إعدادات الفوترة والعملات.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="billingCurrency">عملة الفوترة</Label>
-            <Select value={billingCurrency} onValueChange={setBillingCurrency}>
-              <SelectTrigger id="billingCurrency" className="w-[180px]">
-                <SelectValue placeholder="اختر العملة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="YER">ريال يمني (YER)</SelectItem>
-                <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
-                <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-         <CardFooter className="border-t px-6 py-4">
-            <Button onClick={handleSaveChanges}>حفظ كل الإعدادات</Button>
         </CardFooter>
       </Card>
     </div>
