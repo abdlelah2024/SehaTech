@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Bell,
   CircleUser,
@@ -19,8 +19,9 @@ import {
   FileText,
 } from "lucide-react"
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { doc, onSnapshot } from "firebase/firestore";
 
 
 import { Badge } from "@/components/ui/badge"
@@ -53,6 +54,7 @@ import { GlobalSearch } from "@/components/dashboard/global-search"
 import type { Patient, UserRole } from "@/lib/types"
 import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
+import { usePermissions } from "@/hooks/use-permissions"
 
 
 type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "users" | "settings" | "audit-log";
@@ -64,19 +66,20 @@ export default function Dashboard() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') as TabValue || 'dashboard';
 
-  // In a real app, this would come from the user's document in Firestore
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('admin');
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('receptionist'); 
+  const permissions = usePermissions(currentUserRole);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-        // Here you would typically fetch the user's role from Firestore
-        // For now, we'll keep it static.
-        // const userDoc = await getDoc(doc(db, "users", user.uid));
-        // if (userDoc.exists()) {
-        //   setCurrentUserRole(userDoc.data().role);
-        // }
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        const userDocRef = doc(db, "users", authUser.uid);
+        const unsubUser = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            setCurrentUserRole(doc.data().role);
+          }
+        });
+        return () => unsubUser();
       } else {
         router.push('/');
       }
@@ -93,27 +96,30 @@ export default function Dashboard() {
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
   const navLinks = [
-    { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard", roles: ['admin', 'receptionist', 'doctor'] },
-    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments", roles: ['admin', 'receptionist', 'doctor'] },
-    { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors", roles: ['admin', 'receptionist'] },
-    { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients", roles: ['admin', 'receptionist', 'doctor'] },
-    { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing", roles: ['admin', 'receptionist'] },
-    { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", roles: ['admin', 'receptionist', 'doctor'] },
-    { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", roles: ['admin'] },
-    { id: "reports", label: "التقارير", icon: FileText, href: "/dashboard?tab=reports", roles: ['admin'] },
-    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", roles: ['admin'] },
-    { id: "settings", label: "الإعدادات", icon: SlidersHorizontal, href: "/dashboard?tab=settings", roles: ['admin'] },
-    { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", roles: ['admin'] },
+    { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard", permission: "viewDashboard" },
+    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments", permission: "viewAppointments" },
+    { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors", permission: "viewDoctors" },
+    { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients", permission: "viewPatients" },
+    { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing", permission: "viewBilling" },
+    { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", permission: "useChat" },
+    { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", permission: "viewAnalytics" },
+    { id: "reports", label: "التقارير", icon: FileText, href: "/dashboard?tab=reports", permission: "viewReports" },
+    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", permission: "manageUsers" },
+    { id: "settings", label: "الإعدادات", icon: SlidersHorizontal, href: "/dashboard?tab=settings", permission: "manageSettings" },
+    { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", permission: "viewAuditLog" },
   ];
   
-  const accessibleLinks = navLinks.filter(link => link.roles.includes(currentUserRole));
+  const accessibleLinks = useMemo(() => {
+    if (!permissions) return [];
+    return navLinks.filter(link => permissions[link.permission as keyof typeof permissions]);
+  }, [permissions]);
   
   useEffect(() => {
     const tab = searchParams.get('tab') as TabValue;
     if (tab && accessibleLinks.some(l => l.id === tab)) {
       setActiveTab(tab);
-    } else {
-      setActiveTab('dashboard');
+    } else if (accessibleLinks.length > 0) {
+      setActiveTab(accessibleLinks[0].id as TabValue);
     }
   }, [searchParams, accessibleLinks]);
   
@@ -170,14 +176,10 @@ export default function Dashboard() {
   );
 
   const handlePatientCreated = (newPatient: Patient) => {
-    // This is a placeholder. The actual patient list state is in PatientsTab.
-    // We might need to lift state up or use a global state manager if we want
-    // the new patient to be immediately searchable in GlobalSearch.
-    // For now, this just closes the modals.
     setIsAppointmentModalOpen(false);
   }
 
-  if (!user) {
+  if (!user || !permissions) {
     return (
         <div className="flex h-screen items-center justify-center">
             <p>جار التحميل...</p>

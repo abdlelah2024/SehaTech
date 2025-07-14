@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState } from "react"
@@ -21,8 +22,8 @@ import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("asd19082@gmail.com")
-  const [password, setPassword] = useState("12345678")
+  const [email, setEmail] = useState("admin@sehatech.com")
+  const [password, setPassword] = useState("123456")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -30,14 +31,23 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setIsLoading(true)
     try {
+      if (!auth) {
+        throw new Error("Firebase Auth is not initialized.");
+      }
       await signInWithEmailAndPassword(auth, email, password)
       router.push("/dashboard")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error)
+      let description = "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+      if (error.code === 'auth/invalid-credential') {
+        description = "بيانات الاعتماد غير صالحة. يرجى التحقق من البريد الإلكتروني وكلمة المرور.";
+      } else if (error.message === "Firebase Auth is not initialized.") {
+        description = "لم تتم تهيئة خدمة المصادقة. يرجى التأكد من صحة إعدادات Firebase."
+      }
       toast({
         variant: "destructive",
         title: "خطأ في تسجيل الدخول",
-        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+        description: description,
       })
       setIsLoading(false)
     }
