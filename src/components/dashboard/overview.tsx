@@ -175,7 +175,7 @@ export function Overview() {
 
     const transactions = transactionsState.filter(transaction => {
       if (!transaction.date) return false;
-      const transactionDate = transaction.date.toDate();
+      const transactionDate = typeof transaction.date.toDate === 'function' ? transaction.date.toDate() : new Date(transaction.date);
       const inDateRange = isWithinInterval(transactionDate, interval);
       
       const matchesDoctor = filterDoctor === 'all' ? true : patientIdsFromFilteredAppointments.includes(transaction.patientId);
@@ -185,7 +185,7 @@ export function Overview() {
     
     const newPatientsInPeriod = patientsState.filter(patient => {
         if (!patient.createdAt) return false;
-        const creationDate = patient.createdAt.toDate();
+        const creationDate = typeof patient.createdAt.toDate === 'function' ? patient.createdAt.toDate() : new Date(patient.createdAt);
         return isWithinInterval(creationDate, interval);
     });
 

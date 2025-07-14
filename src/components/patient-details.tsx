@@ -194,7 +194,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                                </TableCell>
                                <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                                <TableCell>
-                                 <LocalizedDateTime dateTime={transaction.date.toDate().toISOString()} />
+                                 <LocalizedDateTime dateTime={transaction.date} />
                                 </TableCell>
                                <TableCell>{transaction.service}</TableCell>
                             </TableRow>
@@ -243,7 +243,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                             <Skeleton className="h-4 w-3/4" />
                           </div>
                         ) : (
-                          summary
+                           summary || "لم يتم إنشاء ملخص بعد."
                         )}
                       </AlertDescription>
                     </Alert>

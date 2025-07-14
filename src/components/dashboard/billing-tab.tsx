@@ -38,6 +38,7 @@ import { suggestBillingService, SuggestBillingServiceInput } from "@/ai/flows/su
 import { Sparkles, Loader2, Search } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, where, getDocs } from "firebase/firestore"
+import { LocalizedDateTime } from "../localized-date-time";
 
 export function BillingTab({ }: {}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -251,7 +252,7 @@ export function BillingTab({ }: {}) {
                   <TableCell className="font-mono text-xs" dir="ltr">{transaction.id}</TableCell>
                   <TableCell>{transaction.patientName}</TableCell>
                   <TableCell>{transaction.service}</TableCell>
-                  <TableCell>{transaction.date ? new Date(transaction.date.seconds * 1000).toLocaleDateString('ar-EG') : 'جارٍ...'}</TableCell>
+                  <TableCell><LocalizedDateTime dateTime={transaction.date} /></TableCell>
                   <TableCell>{transaction.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                   <TableCell>
                      <Badge variant={

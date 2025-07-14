@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 
 interface LocalizedDateTimeProps {
-  dateTime: string;
+  dateTime: any; // Can be a string, a Firestore Timestamp, or a JS Date
   locale?: string;
   options?: Intl.DateTimeFormatOptions;
 }
@@ -15,11 +15,19 @@ export function LocalizedDateTime({ dateTime, locale = 'ar-EG', options = {} }: 
   useEffect(() => {
     // This effect runs only on the client, after hydration
     try {
-      const date = new Date(dateTime);
+      if (!dateTime) {
+        setFormattedDate('جارٍ...');
+        return;
+      }
+      // Check if it's a Firestore Timestamp and convert it
+      const date = typeof dateTime.toDate === 'function' 
+        ? dateTime.toDate() 
+        : new Date(dateTime);
+        
       setFormattedDate(date.toLocaleString(locale, options));
     } catch (e) {
       // Fallback for invalid dates
-      setFormattedDate(dateTime);
+      setFormattedDate(String(dateTime));
     }
   }, [dateTime, locale, options]);
 

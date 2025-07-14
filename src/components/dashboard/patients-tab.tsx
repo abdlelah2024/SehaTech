@@ -61,7 +61,10 @@ export function PatientsTab() {
   useEffect(() => {
     const q = query(collection(db, "patients"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const pats = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+      const pats = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data() as Omit<Patient, 'id'>, // Explicitly cast data and then createdAt below
+      })).map(patient => ({ ...patient, createdAt: patient.createdAt as firebase.firestore.Timestamp }) as Patient);
       setPatients(pats);
     });
     return () => unsubscribe();

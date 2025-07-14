@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -37,6 +38,7 @@ import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore"
 import type { Transaction } from "@/lib/types"
+import { LocalizedDateTime } from "../localized-date-time"
 
 const reportTypes = [
   { value: "financial_summary", label: "ملخص مالي", icon: FileText },
@@ -271,7 +273,7 @@ export function ReportsTab() {
                                 <TableCell className="font-mono text-xs" dir="ltr">{t.id}</TableCell>
                                 <TableCell>{t.patientName}</TableCell>
                                 <TableCell>{t.service}</TableCell>
-                                <TableCell>{format(t.date.toDate(), "P", { locale: ar })}</TableCell>
+                                <TableCell><LocalizedDateTime dateTime={t.date} options={{ dateStyle: 'short' }} /></TableCell>
                                 <TableCell>{t.amount.toLocaleString('ar-EG')} ﷼</TableCell>
                             </TableRow>
                         )) : (
@@ -288,5 +290,3 @@ export function ReportsTab() {
     </div>
   )
 }
-
-    
