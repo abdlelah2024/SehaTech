@@ -409,29 +409,31 @@ export function Overview() {
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle>حالة النظام</CardTitle>
+                    <CardTitle>حالة المستخدمين</CardTitle>
+                    <CardDescription>عرض المستخدمين وحالتهم في النظام.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                             <Wifi className="h-5 w-5 text-muted-foreground"/>
-                             <span>مزامنة البيانات</span>
+                    {usersState.map(user => (
+                         <div key={user.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-9 w-9">
+                                    <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(user.name)}`} data-ai-hint="person avatar" />
+                                    <AvatarFallback>{getPatientInitials(user.name)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.role}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-green-600">
+                               <Circle className="h-3 w-3 fill-current" />
+                               <span>متصل</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 text-green-600">
-                           <CheckCircle className="h-5 w-5" />
-                           <span>متصل</span>
-                        </div>
-                    </div>
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                             <Database className="h-5 w-5 text-muted-foreground"/>
-                             <span>قاعدة البيانات الخارجية</span>
-                        </div>
-                         <div className="flex items-center gap-2 text-green-600">
-                           <CheckCircle className="h-5 w-5" />
-                           <span>متصل</span>
-                        </div>
-                    </div>
+                    ))}
+                    {usersState.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">لا يوجد مستخدمون لعرضهم.</p>
+                    )}
                 </CardContent>
             </Card>
           </div>
@@ -439,3 +441,6 @@ export function Overview() {
     </div>
   )
 }
+
+
+    
