@@ -174,6 +174,7 @@ export function Overview() {
     const patientIdsFromFilteredAppointments = [...new Set(appointments.map(a => a.patientId))];
 
     const transactions = transactionsState.filter(transaction => {
+      if (!transaction.date) return false;
       const transactionDate = transaction.date.toDate();
       const inDateRange = isWithinInterval(transactionDate, interval);
       
