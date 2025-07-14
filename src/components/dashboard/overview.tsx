@@ -47,7 +47,7 @@ import { Calendar } from "../ui/calendar"
 import type { DateRange } from "react-day-picker"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs } from "firebase/firestore"
+import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -114,18 +114,46 @@ export function Overview() {
 
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
     const appointmentRef = doc(db, "appointments", appointmentId);
+    const appointment = appointmentsState.find(a => a.id === appointmentId);
+    
+    if (!appointment) {
+        toast({ variant: "destructive", title: "خطأ", description: "لم يتم العثور على الموعد." });
+        return;
+    }
+
     try {
         await updateDoc(appointmentRef, { status: newStatus });
+
+        let toastDescription = `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`;
+
+        if (newStatus === 'Completed') {
+            const doctor = doctorsState.find(d => d.id === appointment.doctorId);
+            if (doctor && doctor.servicePrice) {
+                await addDoc(collection(db, "transactions"), {
+                    patientId: appointment.patientId,
+                    patientName: appointment.patientName,
+                    date: serverTimestamp(),
+                    amount: doctor.servicePrice,
+                    status: 'Success',
+                    service: `${doctor.specialty} Consultation`,
+                });
+                toastDescription += ` وتم إنشاء فاتورة بمبلغ ${doctor.servicePrice} ﷼ تلقائياً.`;
+            } else {
+                 toastDescription += ` (لم يتم إنشاء فاتورة لعدم تحديد سعر خدمة للطبيب).`;
+            }
+        }
+        
         toast({
-            title: "تم تحديث الحالة",
-            description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
-        })
+            title: "تم تحديث الحالة بنجاح",
+            description: toastDescription
+        });
+
     } catch (e) {
-         console.error("Error updating document: ", e);
+         console.error("Error updating document or creating transaction: ", e);
          toast({
             variant: "destructive",
             title: "حدث خطأ!",
-            description: "لم نتمكن من تحديث حالة الموعد.",
+            description: "لم نتمكن من تحديث حالة الموعد أو إنشاء الفاتورة.",
         });
     }
   };
@@ -441,6 +469,3 @@ export function Overview() {
     </div>
   )
 }
-
-
-    

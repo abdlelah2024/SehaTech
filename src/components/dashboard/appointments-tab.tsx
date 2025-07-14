@@ -117,12 +117,39 @@ export function AppointmentsTab({ }: {}) {
 
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
     const appointmentRef = doc(db, "appointments", appointmentId);
+    const appointment = appointments.find(a => a.id === appointmentId);
+    
+    if (!appointment) {
+        toast({ variant: "destructive", title: "خطأ", description: "لم يتم العثور على الموعد." });
+        return;
+    }
+
     try {
         await updateDoc(appointmentRef, { status: newStatus });
+
+        let toastDescription = `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`;
+
+        if (newStatus === 'Completed') {
+            const doctor = doctors.find(d => d.id === appointment.doctorId);
+            if (doctor && doctor.servicePrice) {
+                await addDoc(collection(db, "transactions"), {
+                    patientId: appointment.patientId,
+                    patientName: appointment.patientName,
+                    date: serverTimestamp(),
+                    amount: doctor.servicePrice,
+                    status: 'Success',
+                    service: `${doctor.specialty} Consultation`,
+                });
+                toastDescription += ` وتم إنشاء فاتورة بمبلغ ${doctor.servicePrice} ﷼ تلقائياً.`;
+            } else {
+                 toastDescription += ` (لم يتم إنشاء فاتورة لعدم تحديد سعر خدمة للطبيب).`;
+            }
+        }
+        
         toast({
-            title: "تم تحديث الحالة",
-            description: `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`
-        })
+            title: "تم تحديث الحالة بنجاح",
+            description: toastDescription
+        });
     } catch (e) {
          console.error("Error updating document: ", e);
          toast({
@@ -174,7 +201,7 @@ export function AppointmentsTab({ }: {}) {
                       !filterDate && "text-muted-foreground"
                     )}
                   >
-                     <CalendarIcon className="mr-2 h-4 w-4" />
+                     <CalendarIcon className="ml-2 h-4 w-4" />
                      {filterDate ? format(filterDate, "PPP", { locale: ar }) : <span>تصفية حسب التاريخ</span>}
                   </Button>
                 </PopoverTrigger>
