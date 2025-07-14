@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState } from "react"
@@ -17,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { Doctor } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
 
 interface AddDoctorDialogProps {
   onDoctorCreated: (doctor: Omit<Doctor, 'id'>) => void;
@@ -39,6 +39,7 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
   const [price, setPrice] = useState("");
   const [returnDays, setReturnDays] = useState("");
   const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const handleDayChange = (dayId: string, checked: boolean) => {
     setAvailableDays(prev =>
@@ -47,10 +48,12 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
   };
 
   const handleCreateDoctor = () => {
-    // Basic validation
     if (!name || !specialty || !price || !returnDays || availableDays.length === 0) {
-      // In a real app, you'd use a form library like react-hook-form for better validation.
-      alert("الرجاء تعبئة جميع الحقول المطلوبة.");
+      toast({
+        variant: "destructive",
+        title: "معلومات ناقصة",
+        description: "الرجاء تعبئة جميع الحقول المطلوبة.",
+      });
       return;
     }
 
@@ -61,9 +64,10 @@ export function AddDoctorDialog({ onDoctorCreated }: AddDoctorDialogProps) {
       freeReturnDays: parseInt(returnDays, 10),
       availableDays: availableDays.map(dayId => weekDays.find(d => d.id === dayId)!.label),
       image: `https://placehold.co/100x100.png?text=${name.charAt(0)}`,
-      nextAvailable: 'غداً، 10:00 ص', // Placeholder
-      isAvailableToday: true, // Placeholder
-      availability: [], // Placeholder, should be managed separately
+      // These are placeholders, a more robust system would calculate this
+      nextAvailable: 'غداً، 10:00 ص',
+      isAvailableToday: true, 
+      availability: [], 
     };
 
     onDoctorCreated(newDoctor);

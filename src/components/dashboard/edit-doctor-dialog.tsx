@@ -80,12 +80,6 @@ export function EditDoctorDialog({ isOpen, onClose, doctor, onDoctorUpdated }: E
     };
 
     onDoctorUpdated(updatedDoctor);
-
-    toast({
-      title: "تم تحديث البيانات بنجاح",
-      description: `تم تحديث ملف د. ${name}.`,
-    });
-    
     onClose();
   };
 
