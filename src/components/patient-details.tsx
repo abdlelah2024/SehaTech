@@ -66,10 +66,10 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
   useEffect(() => {
       if (!patient || !isOpen) return;
 
-      const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", patient.id), orderBy("dateTime", "desc"));
+      const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", patient.id), orderBy("dateTime", "asc"));
       const appointmentsUnsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
           const appts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Appointment);
-          setPatientAppointments(appts);
+          setPatientAppointments(appts.reverse()); // Show most recent first in UI
       });
 
       const transactionsQuery = query(collection(db, "transactions"), where("patientId", "==", patient.id), orderBy("date", "desc"));
