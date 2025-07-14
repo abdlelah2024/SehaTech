@@ -14,7 +14,7 @@ import {z} from 'genkit';
 const SummarizePatientHistoryInputSchema = z.object({
   patient: z.object({
     name: z.string().describe("The patient's full name."),
-    dob: z.string().describe("The patient's date of birth."),
+    age: z.number().describe("The patient's age."),
     gender: z.string().describe("The patient's gender."),
   }),
   appointments: z.array(
@@ -47,7 +47,7 @@ const prompt = ai.definePrompt({
 
   معلومات المريض:
   - الاسم: {{{patient.name}}}
-  - تاريخ الميلاد: {{{patient.dob}}}
+  - العمر: {{{patient.age}}}
   - الجنس: {{{patient.gender}}}
 
   تاريخ المواعيد:

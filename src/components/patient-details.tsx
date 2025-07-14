@@ -83,7 +83,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
         const input: SummarizePatientHistoryInput = {
           patient: {
             name: patient.name,
-            dob: patient.dob,
+            age: patient.age,
             gender: patient.gender,
           },
           appointments: patientAppointments.map(a => ({
@@ -108,19 +108,6 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     }
   }, [patient, isOpen, patientAppointments]);
 
-
-  const getAge = (dob: string) => {
-    if (!dob) return '';
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age;
-  }
-  
   if (!patient) return null;
 
   return (
@@ -227,7 +214,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                     <div className="space-y-3 text-sm">
                        <div className="flex items-center gap-3">
                             <Cake className="h-4 w-4 text-muted-foreground" />
-                            <span>{patient.dob} (العمر {getAge(patient.dob)} سنة)</span>
+                            <span>العمر: {patient.age} سنة</span>
                        </div>
                        <div className="flex items-center gap-3">
                             <VenetianMask className="h-4 w-4 text-muted-foreground" />

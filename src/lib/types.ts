@@ -3,7 +3,7 @@
 export interface Patient {
   id: string;
   name: string;
-  dob: string;
+  age: number;
   gender: 'ذكر' | 'أنثى' | 'آخر';
   phone: string;
   address: string;

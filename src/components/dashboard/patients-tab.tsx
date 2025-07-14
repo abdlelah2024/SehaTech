@@ -197,7 +197,7 @@ export function PatientsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">المريض</TableHead>
-                  <TableHead className="text-right">رقم الهاتف</TableHead>
+                  <TableHead className="text-right">العمر</TableHead>
                   <TableHead className="hidden sm:table-cell text-right">الجنس</TableHead>
                   <TableHead className="hidden sm:table-cell text-right">إجمالي المواعيد</TableHead>
                   <TableHead className="text-center">الإجراءات</TableHead>
@@ -215,7 +215,7 @@ export function PatientsTab() {
                         <span className="font-medium">{patient.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{patient.phone}</TableCell>
+                    <TableCell>{patient.age}</TableCell>
                     <TableCell className="hidden sm:table-cell">{patient.gender}</TableCell>
                     <TableCell className="hidden sm:table-cell">{getPatientAppointmentCount(patient.id)}</TableCell>
                     <TableCell className="text-center">
