@@ -35,6 +35,9 @@ const formFieldsConfig = {
   addPatient: [
     { id: 'dob', label: 'تاريخ الميلاد', required: true },
     { id: 'address', label: 'العنوان', required: false },
+  ],
+  newAppointment: [
+    { id: 'notes', label: 'ملاحظات الموعد', required: false },
   ]
 };
 
@@ -132,6 +135,7 @@ export function SettingsTab() {
                 <SelectContent>
                   <SelectItem value="addDoctor">نموذج إضافة طبيب</SelectItem>
                   <SelectItem value="addPatient">نموذج إضافة مريض</SelectItem>
+                  <SelectItem value="newAppointment">نموذج المواعيد الجديدة</SelectItem>
                 </SelectContent>
               </Select>
            </div>
