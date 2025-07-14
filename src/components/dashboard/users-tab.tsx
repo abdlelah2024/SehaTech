@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -52,10 +51,9 @@ import { useToast } from "@/hooks/use-toast"
 import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { EditUserDialog } from "./edit-user-dialog"
-import { Edit, Trash2, Search, Key } from "lucide-react"
+import { Edit, Trash2, Search } from "lucide-react"
 import { db, auth } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
-import { createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
 
@@ -316,5 +314,3 @@ export function UsersTab() {
     </>
   )
 }
-
-    

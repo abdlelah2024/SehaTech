@@ -118,5 +118,3 @@ export const permissions: Record<UserRole, Permissions> = {
   receptionist: receptionistPermissions,
   doctor: doctorPermissions,
 };
-
-    
