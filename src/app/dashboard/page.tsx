@@ -16,6 +16,7 @@ import {
   MessageSquare,
   History,
   SlidersHorizontal,
+  FileText,
 } from "lucide-react"
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -45,6 +46,7 @@ import { UsersTab } from "@/components/dashboard/users-tab"
 import { ChatTab } from "@/components/dashboard/chat-tab"
 import { AuditLogTab } from "@/components/dashboard/audit-log-tab"
 import { SettingsTab } from "@/components/dashboard/settings-tab"
+import { ReportsTab } from "@/components/dashboard/reports-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
@@ -53,7 +55,7 @@ import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "users" | "settings" | "audit-log";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "users" | "settings" | "audit-log";
 
 
 export default function Dashboard() {
@@ -98,6 +100,7 @@ export default function Dashboard() {
     { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing", roles: ['admin', 'receptionist'] },
     { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", roles: ['admin', 'receptionist', 'doctor'] },
     { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", roles: ['admin'] },
+    { id: "reports", label: "التقارير", icon: FileText, href: "/dashboard?tab=reports", roles: ['admin'] },
     { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", roles: ['admin'] },
     { id: "settings", label: "الإعدادات", icon: SlidersHorizontal, href: "/dashboard?tab=settings", roles: ['admin'] },
     { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", roles: ['admin'] },
@@ -275,6 +278,9 @@ export default function Dashboard() {
             </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab />
+            </TabsContent>
+            <TabsContent value="reports">
+              <ReportsTab />
             </TabsContent>
             <TabsContent value="users">
               <UsersTab />
