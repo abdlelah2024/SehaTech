@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import {
@@ -45,8 +44,8 @@ const statusTranslations: { [key: string]: string } = {
   'Follow-up': 'إعادة'
 };
 
-function calculateAge(dob: string | undefined): number | string {
-  if (!dob) return 'N/A';
+function calculateAge(dob: string | undefined): number {
+  if (!dob) return 0;
   const birthDate = new Date(dob);
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -103,7 +102,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
         const input: SummarizePatientHistoryInput = {
           patient: {
             name: patient.name,
-            age: calculateAge(patient.dob) as number,
+            age: calculateAge(patient.dob),
             gender: patient.gender,
           },
           appointments: patientAppointments.map(a => ({
@@ -234,7 +233,7 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
                     <div className="space-y-3 text-sm">
                        <div className="flex items-center gap-3">
                             <Cake className="h-4 w-4 text-muted-foreground" />
-                            <span>العمر: {calculateAge(patient.dob)} سنة</span>
+                            <span>العمر: {calculateAge(patient.dob) || "غير محدد"} سنة</span>
                        </div>
                        <div className="flex items-center gap-3">
                             <VenetianMask className="h-4 w-4 text-muted-foreground" />
@@ -277,3 +276,5 @@ export function PatientDetails({ patient, isOpen, onOpenChange }: PatientDetails
     </Dialog>
   )
 }
+
+    
