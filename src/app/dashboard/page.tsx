@@ -43,7 +43,6 @@ import { DoctorsTab } from "@/components/dashboard/doctors-tab"
 import { PatientsTab } from "@/components/dashboard/patients-tab"
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
 import { BillingTab } from "@/components/dashboard/billing-tab"
-import { UsersTab } from "@/components/dashboard/users-tab"
 import { ChatTab } from "@/components/dashboard/chat-tab"
 import { AuditLogTab } from "@/components/dashboard/audit-log-tab"
 import { SettingsTab } from "@/components/dashboard/settings-tab"
@@ -57,7 +56,7 @@ import { AppointmentScheduler } from "@/components/appointment-scheduler"
 import { usePermissions } from "@/hooks/use-permissions"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "users" | "settings" | "audit-log";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "settings" | "audit-log";
 
 
 export default function Dashboard() {
@@ -104,7 +103,6 @@ export default function Dashboard() {
     { id: "chat", label: "الدردشة", icon: MessageSquare, href: "/dashboard?tab=chat", permission: "useChat" },
     { id: "analytics", label: "التحليلات", icon: LineChart, href: "/dashboard?tab=analytics", permission: "viewAnalytics" },
     { id: "reports", label: "التقارير", icon: FileText, href: "/dashboard?tab=reports", permission: "viewReports" },
-    { id: "users", label: "المستخدمون", icon: Users, href: "/dashboard?tab=users", permission: "manageUsers" },
     { id: "settings", label: "الإعدادات", icon: SlidersHorizontal, href: "/dashboard?tab=settings", permission: "manageSettings" },
     { id: "audit-log", label: "سجل التغييرات", icon: History, href: "/dashboard?tab=audit-log", permission: "viewAuditLog" },
   ];
@@ -284,9 +282,6 @@ export default function Dashboard() {
             <TabsContent value="reports">
               <ReportsTab />
             </TabsContent>
-            <TabsContent value="users">
-              <UsersTab />
-            </TabsContent>
             <TabsContent value="settings">
               <SettingsTab />
             </TabsContent>
@@ -315,5 +310,3 @@ export default function Dashboard() {
     </>
   )
 }
-
-    

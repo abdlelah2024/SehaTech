@@ -162,7 +162,18 @@ export function UsersTab() {
     );
   }, [users, searchTerm]);
 
-  if (!permissions) return null;
+  if (!permissions?.manageUsers) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>غير مصرح به</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p>ليس لديك الصلاحية لعرض هذه الصفحة.</p>
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <>
