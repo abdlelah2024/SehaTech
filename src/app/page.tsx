@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
           <CardDescription>
-            أدخل بريدك الإلكتروني للوصول إلى حسابك
+            أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -78,6 +78,20 @@ export default function LoginPage() {
                 className="pl-8 text-right"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password" className="text-right">كلمة المرور</Label>
+            <div className="relative">
+              <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                required
+                className="pl-8 text-right"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>

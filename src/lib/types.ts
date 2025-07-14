@@ -63,6 +63,7 @@ export interface User {
   email: string;
   role: UserRole;
   status?: 'online' | 'offline';
+  createdAt?: any;
 }
 
 export interface Message {
