@@ -112,11 +112,15 @@ export function Overview() {
         const presenceRef = ref(rtdb, 'users');
         const unsubPresence = onValue(presenceRef, (snapshot) => {
             const presenceData = snapshot.val();
-            const combinedUsers = firestoreUsers.map(user => ({
-                ...user,
-                presence: presenceData?.[user.id]
-            }));
-            setUsersState(combinedUsers);
+            if (presenceData) {
+              const combinedUsers = firestoreUsers.map(user => ({
+                  ...user,
+                  presence: presenceData?.[user.id]
+              }));
+              setUsersState(combinedUsers);
+            } else {
+              setUsersState(firestoreUsers);
+            }
         });
 
         return () => unsubPresence();
