@@ -58,16 +58,16 @@ import { EditUserDialog } from "./edit-user-dialog"
 import { db, auth } from "@/lib/firebase"
 import { collection, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
 import { usePermissions } from "@/hooks/use-permissions"
-import { useAuthState } from "react-firebase-hooks/auth"
 import { permissions as allPermissions, permissionDetails, PermissionCategory, PermissionKey, roleTranslations } from "@/lib/permissions"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { logAuditEvent } from "@/lib/audit-log-service"
 
 interface SettingsTabProps {
+  currentUser: User | null;
   users: User[];
 }
 
-export function SettingsTab({ users }: SettingsTabProps) {
+export function SettingsTab({ currentUser, users }: SettingsTabProps) {
   const { toast } = useToast()
 
   // Mock state for settings
@@ -76,7 +76,6 @@ export function SettingsTab({ users }: SettingsTabProps) {
   const [clinicPhone, setClinicPhone] = useState("01-555-555")
 
   // User Management State
-  const [authUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -89,7 +88,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>('receptionist');
   const [currentPermissions, setCurrentPermissions] = useState(allPermissions[selectedRole]);
   
-  const permissions = usePermissions(users.find(u => u.id === authUser?.uid)?.role || 'receptionist');
+  const permissions = usePermissions(currentUser?.role);
   
   useEffect(() => {
     setCurrentPermissions(allPermissions[selectedRole]);
@@ -103,7 +102,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
   }, [users, searchTerm]);
 
   const handleSaveChanges = async () => {
-    if (!authUser) return;
+    if (!currentUser) return;
     // In a real app, you would save these to a 'settings' collection in Firestore.
     console.log("Saving settings...", {
       clinicName,
@@ -114,11 +113,11 @@ export function SettingsTab({ users }: SettingsTabProps) {
       title: "تم حفظ الإعدادات",
       description: "تم تحديث إعدادات النظام بنجاح.",
     });
-     await logAuditEvent('تحديث الإعدادات العامة', { clinicName, clinicAddress }, authUser.uid);
+     await logAuditEvent('تحديث الإعدادات العامة', { clinicName, clinicAddress }, currentUser.id);
   }
 
   const handleAddUser = async () => {
-    if (!name || !email || !role || !password || !authUser) {
+    if (!name || !email || !role || !password || !currentUser) {
       toast({
         variant: "destructive",
         title: "معلومات ناقصة",
@@ -135,7 +134,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
         title: "تمت إضافة المستخدم بنجاح (محاكاة)",
         description: `تمت إضافة ${name} إلى قاعدة البيانات. تأكد من إنشائه في نظام المصادقة بكلمة المرور المحددة.`,
       });
-      await logAuditEvent('إضافة مستخدم', { newUserId: docRef.id, newUserEmail: email, newUserName: name }, authUser.uid);
+      await logAuditEvent('إضافة مستخدم', { newUserId: docRef.id, newUserEmail: email, newUserName: name }, currentUser.id);
       resetAddDialog();
     } catch(e: any) {
       console.error(e);
@@ -152,7 +151,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
   }
 
   const handleUserUpdated = async (updatedUser: User) => {
-    if (!authUser) return;
+    if (!currentUser) return;
     const { id, ...userData } = updatedUser;
     const userRef = doc(db, "users", id);
     try {
@@ -162,7 +161,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
           description: `تم تحديث ملف المستخدم ${updatedUser.name}.`,
         });
         setUserToEdit(null);
-        await logAuditEvent('تعديل مستخدم', { updatedUserId: id, updatedUserName: updatedUser.name }, authUser.uid);
+        await logAuditEvent('تعديل مستخدم', { updatedUserId: id, updatedUserName: updatedUser.name }, currentUser.id);
     } catch(e) {
         console.error(e);
         toast({ variant: "destructive", title: "خطأ", description: "فشل تحديث المستخدم."});
@@ -170,14 +169,14 @@ export function SettingsTab({ users }: SettingsTabProps) {
   };
   
   const handleUserDeleted = async (userToDelete: User) => {
-    if (!authUser) return;
+    if (!currentUser) return;
      try {
        await deleteDoc(doc(db, "users", userToDelete.id));
        toast({
           title: "تم الحذف بنجاح",
           description: "تم حذف المستخدم من النظام.",
        });
-       await logAuditEvent('حذف مستخدم', { deletedUserId: userToDelete.id, deletedUserName: userToDelete.name }, authUser.uid);
+       await logAuditEvent('حذف مستخدم', { deletedUserId: userToDelete.id, deletedUserName: userToDelete.name }, currentUser.id);
      } catch(e) {
         console.error(e);
         toast({ variant: "destructive", title: "خطأ", description: "فشل حذف المستخدم."});
@@ -189,7 +188,7 @@ export function SettingsTab({ users }: SettingsTabProps) {
   };
 
   const handleSavePermissions = async () => {
-    if (!authUser) return;
+    if (!currentUser) return;
     // In a real app, you would save `currentPermissions` to Firestore
     // under a 'permissions' collection with the document ID as `selectedRole`.
     console.log(`Saving permissions for role: ${selectedRole}`, currentPermissions);
@@ -197,29 +196,17 @@ export function SettingsTab({ users }: SettingsTabProps) {
       title: "تم حفظ الصلاحيات",
       description: `تم تحديث صلاحيات دور "${roleTranslations[selectedRole]}" بنجاح (محاكاة).`
     });
-     await logAuditEvent('تحديث الصلاحيات', { role: selectedRole }, authUser.uid);
+     await logAuditEvent('تحديث الصلاحيات', { role: selectedRole }, currentUser.id);
   };
 
   const permissionCategories = useMemo(() => {
-    const categories: { [key in PermissionCategory]: PermissionKey[] } = {
-      Dashboard: [],
-      Appointments: [],
-      Patients: [],
-      Doctors: [],
-      Billing: [],
-      Reports: [],
-      Analytics: [],
-      Users: [],
-      Settings: [],
-      Chat: [],
-      AuditLog: []
-    };
+    const categories: { [key in PermissionCategory]?: PermissionKey[] } = {};
     (Object.keys(permissionDetails) as PermissionKey[]).forEach(key => {
       const detail = permissionDetails[key];
       if (!categories[detail.category]) {
         categories[detail.category] = [];
       }
-      categories[detail.category].push(key);
+      categories[detail.category]?.push(key);
     });
     return categories;
   }, []);

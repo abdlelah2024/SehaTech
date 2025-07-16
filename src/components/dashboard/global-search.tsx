@@ -1,33 +1,29 @@
 
 
-
 "use client"
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus, CalendarPlus, User as UserIcon } from "lucide-react";
 import type { Patient } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { AppointmentScheduler } from '../appointment-scheduler';
 import { useDebounce } from '@/hooks/use-debounce';
-import { db } from "@/lib/firebase"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { useToast } from '@/hooks/use-toast';
 
 interface GlobalSearchProps {
   patients: Patient[];
   onViewProfile: (patient: Patient) => void;
   onNewAppointment: (patient: Patient) => void;
+  onPatientCreated: (patient: Omit<Patient, 'id'>) => void;
 }
 
-export function GlobalSearch({ patients, onViewProfile, onNewAppointment }: GlobalSearchProps) {
+export function GlobalSearch({ patients, onViewProfile, onNewAppointment, onPatientCreated }: GlobalSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!debouncedSearchTerm) {
@@ -58,31 +54,21 @@ export function GlobalSearch({ patients, onViewProfile, onNewAppointment }: Glob
 
   const showResults = isFocused && searchTerm;
   
-  const getPrefilledData = () => {
+  const getPrefilledData = useCallback(() => {
      const isPhone = /^\d+$/.test(searchTerm);
      return isPhone ? { phone: searchTerm } : { name: searchTerm };
-  }
+  }, [searchTerm]);
 
-  const handlePatientCreated = async (newPatientData: Omit<Patient, 'id'>) => {
-    try {
-        const docRef = await addDoc(collection(db, "patients"), {
-            ...newPatientData,
-            createdAt: serverTimestamp(),
-        });
-        toast({
-            title: "تم إنشاء ملف المريض بنجاح!",
-        });
-        setIsNewPatientModalOpen(false);
-        setSearchTerm('');
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        toast({
-            variant: "destructive",
-            title: "حدث خطأ!",
-            description: "لم نتمكن من إضافة المريض.",
-        });
-    }
-  };
+  const handleCreateNewPatient = () => {
+    setIsNewPatientModalOpen(true);
+    setIsFocused(false);
+  }
+  
+  const handleInternalPatientCreated = (newPatientData: Omit<Patient, 'id'>) => {
+    onPatientCreated(newPatientData);
+    setIsNewPatientModalOpen(false); // Close the modal after creation
+    setSearchTerm(''); // Clear search term
+  }
 
   return (
     <div className="relative w-full max-w-md" ref={searchWrapperRef}>
@@ -125,7 +111,7 @@ export function GlobalSearch({ patients, onViewProfile, onNewAppointment }: Glob
             ) : (
                 <div 
                     className="flex items-center justify-between p-3 rounded-md cursor-pointer hover:bg-muted"
-                    onClick={() => setIsNewPatientModalOpen(true)}
+                    onClick={handleCreateNewPatient}
                 >
                     <div className="flex items-center gap-3">
                         <UserPlus className="h-5 w-5 text-primary" />
@@ -141,9 +127,11 @@ export function GlobalSearch({ patients, onViewProfile, onNewAppointment }: Glob
       )}
       
       {isNewPatientModalOpen && (
-          <AppointmentScheduler 
+          <AppointmentScheduler
+            isOpen={isNewPatientModalOpen}
+            onOpenChange={setIsNewPatientModalOpen}
             context="new-patient" 
-            onPatientCreated={handlePatientCreated}
+            onPatientCreated={handleInternalPatientCreated}
             prefilledData={getPrefilledData()}
          />
       )}

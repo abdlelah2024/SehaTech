@@ -20,14 +20,16 @@ import { Send, Search, MessageSquare, Circle } from "lucide-react"
 import { db, rtdb } from "@/lib/firebase"
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore"
 import { ref, onValue } from "firebase/database"
-import { useAuthState } from "react-firebase-hooks/auth"
-import { auth } from "@/lib/firebase"
 import { formatDistanceToNow } from "date-fns"
 import { ar } from "date-fns/locale"
 
-export function ChatTab() {
-  const [currentUser] = useAuthState(auth);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+interface ChatTabProps {
+  currentUser: User | null;
+  allUsers: User[];
+}
+
+export function ChatTab({ currentUser, allUsers: initialUsers }: ChatTabProps) {
+  const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [message, setMessage] = useState("")
@@ -35,31 +37,23 @@ export function ChatTab() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Get users from Firestore
-    const usersQuery = query(collection(db, "users"));
-    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
-        const firestoreUsers = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as User);
-        
-        // Get presence info from RTDB
-        const presenceRef = ref(rtdb, 'users');
-        const unsubPresence = onValue(presenceRef, (presenceSnap) => {
-            const presenceData = presenceSnap.val() || {};
-            const combinedUsers = firestoreUsers.map(user => ({
-                ...user,
-                presence: presenceData[user.id]
-            }));
-            setAllUsers(combinedUsers);
-        });
-
-        return () => unsubPresence();
+    const presenceRef = ref(rtdb, 'users');
+    const unsubPresence = onValue(presenceRef, (presenceSnap) => {
+        const presenceData = presenceSnap.val() || {};
+        const combinedUsers = initialUsers.map(user => ({
+            ...user,
+            presence: presenceData[user.id]
+        }));
+        setAllUsers(combinedUsers);
     });
-    return () => unsubUsers();
-  }, []);
+
+    return () => unsubPresence();
+  }, [initialUsers]);
 
   const filteredUsers = useMemo(() => {
     if (!currentUser) return [];
     return allUsers.filter(user =>
-      user.id !== currentUser.uid &&
+      user.id !== currentUser.id &&
       user.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [allUsers, currentUser, searchTerm]);
@@ -73,11 +67,11 @@ export function ChatTab() {
   const handleSendMessage = async () => {
     if (!message.trim() || !selectedUser || !currentUser) return;
 
-    const conversationId = [currentUser.uid, selectedUser.id].sort().join('_');
+    const conversationId = [currentUser.id, selectedUser.id].sort().join('_');
     const messagesCol = collection(db, "conversations", conversationId, "messages");
     
     await addDoc(messagesCol, {
-        senderId: currentUser.uid,
+        senderId: currentUser.id,
         text: message,
         timestamp: serverTimestamp(),
     });
@@ -87,7 +81,7 @@ export function ChatTab() {
   
   useEffect(() => {
       if (!selectedUser || !currentUser) return;
-      const conversationId = [currentUser.uid, selectedUser.id].sort().join('_');
+      const conversationId = [currentUser.id, selectedUser.id].sort().join('_');
       const q = query(collection(db, "conversations", conversationId, "messages"), orderBy("timestamp", "asc"));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -146,10 +140,10 @@ export function ChatTab() {
                         key={msg.id}
                         className={cn(
                           "flex items-end gap-2",
-                          msg.senderId === currentUser.uid ? "justify-end" : "justify-start"
+                          msg.senderId === currentUser.id ? "justify-end" : "justify-start"
                         )}
                       >
-                         {msg.senderId !== currentUser.uid && (
+                         {msg.senderId !== currentUser.id && (
                            <Avatar className="h-8 w-8">
                               <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(selectedUser.name)}`} />
                               <AvatarFallback>{getPatientInitials(selectedUser.name)}</AvatarFallback>
@@ -158,13 +152,13 @@ export function ChatTab() {
                         <div
                           className={cn(
                             "max-w-xs md:max-w-md rounded-lg px-4 py-2",
-                            msg.senderId === currentUser.uid
+                            msg.senderId === currentUser.id
                               ? "bg-primary text-primary-foreground rounded-br-none"
                               : "bg-muted rounded-bl-none"
                           )}
                         >
                           <p className="text-sm">{msg.text}</p>
-                           <p className={cn("text-xs mt-1",  msg.senderId === currentUser.uid ? "text-primary-foreground/70 text-left" : "text-muted-foreground text-right")}>
+                           <p className={cn("text-xs mt-1",  msg.senderId === currentUser.id ? "text-primary-foreground/70 text-left" : "text-muted-foreground text-right")}>
                              {msg.timestamp ? new Date(msg.timestamp?.seconds * 1000).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '...'}
                           </p>
                         </div>

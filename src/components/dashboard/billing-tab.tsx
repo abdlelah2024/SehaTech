@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { suggestBillingService, SuggestBillingServiceInput } from "@/ai/flows/suggest-billing-service";
 import { Sparkles, Loader2, Search } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, where, getDocs } from "firebase/firestore"
+import { collection, query, addDoc, serverTimestamp, orderBy, where, getDocs } from "firebase/firestore"
 import { LocalizedDateTime } from "../localized-date-time";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
@@ -46,9 +46,10 @@ import { logAuditEvent } from "@/lib/audit-log-service";
 interface BillingTabProps {
   transactions: Transaction[];
   patients: Patient[];
+  appointments: Appointment[];
 }
 
-export function BillingTab({ transactions, patients }: BillingTabProps) {
+export function BillingTab({ transactions, patients, appointments }: BillingTabProps) {
   const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -84,7 +85,7 @@ export function BillingTab({ transactions, patients }: BillingTabProps) {
           title: "تم تسجيل الفاتورة",
           description: `تم تسجيل فاتورة بمبلغ ${amount} لـ ${patient.name}.`,
         });
-        await logAuditEvent('إنشاء فاتورة (يدوي)', { transactionId: docRef.id, patientName: patient.name, amount }, currentUser.uid);
+        await logAuditEvent('إنشاء فاتورة (يدوي)', { transactionId: docRef.id, patientName: patient.name, amount }, currentUser.id);
         setIsDialogOpen(false);
     } catch(e) {
         console.error("Error adding transaction:", e);
@@ -104,17 +105,13 @@ export function BillingTab({ transactions, patients }: BillingTabProps) {
 
     setIsSuggesting(true);
     try {
-      const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", selectedPatientId), orderBy("dateTime", "desc"));
-      const querySnapshot = await getDocs(appointmentsQuery);
+      const patientAppointments = appointments.filter(a => a.patientId === selectedPatientId);
 
-      const recentAppointments = querySnapshot.docs.map(doc => {
-          const data = doc.data() as Appointment;
-          return {
-            doctorSpecialty: data.doctorSpecialty,
-            dateTime: data.dateTime,
-            status: data.status,
-          }
-      });
+      const recentAppointments = patientAppointments.map(a => ({
+          doctorSpecialty: a.doctorSpecialty,
+          dateTime: a.dateTime,
+          status: a.status,
+      }));
       
       const input: SuggestBillingServiceInput = {
         patientId: selectedPatientId,
@@ -143,7 +140,7 @@ export function BillingTab({ transactions, patients }: BillingTabProps) {
         transaction.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .sort((a, b) => b.date?.toDate() - a.date?.toDate());
+      .sort((a, b) => (b.date?.toDate() || 0) - (a.date?.toDate() || 0));
   }, [transactions, searchTerm]);
   
   const resetDialog = useCallback(() => {

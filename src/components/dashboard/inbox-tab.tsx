@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -11,48 +11,57 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPatientInitials } from "@/lib/utils";
 import {
   Archive,
-  ArchiveX,
-  File,
-  Inbox,
-  Send,
   Trash2,
+  Inbox,
 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 import type { InboxMessage } from "@/lib/types";
 
-export function InboxTab() {
-  const [currentUser] = useAuthState(auth);
-  const [messages, setMessages] = useState<InboxMessage[]>([]);
+interface InboxTabProps {
+  messages: InboxMessage[];
+}
+
+export function InboxTab({ messages: initialMessages }: InboxTabProps) {
+  const [messages, setMessages] = useState<InboxMessage[]>(initialMessages);
   const [selectedMessage, setSelectedMessage] = useState<InboxMessage | null>(null);
 
   useEffect(() => {
-    if (!currentUser) return;
-    // In a real app, you'd query for messages where recipientId === currentUser.uid
-    const q = query(collection(db, "inboxMessages"), orderBy("timestamp", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as InboxMessage);
-      setMessages(msgs);
-      if (!selectedMessage && msgs.length > 0) {
-        setSelectedMessage(msgs[0]);
-      } else if (selectedMessage) {
-        // update selected message if it's in the new list
-        const updatedSelected = msgs.find(m => m.id === selectedMessage.id);
-        setSelectedMessage(updatedSelected || null);
-      }
-    });
+    // Sort initial messages
+    const sortedMessages = [...initialMessages].sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+    setMessages(sortedMessages);
 
-    return () => unsubscribe();
-  }, [currentUser]);
+    // Set selected message
+    if (!selectedMessage && sortedMessages.length > 0) {
+      setSelectedMessage(sortedMessages[0]);
+    } else if (selectedMessage) {
+      // update selected message if it's in the new list
+      const updatedSelected = sortedMessages.find(m => m.id === selectedMessage.id);
+      setSelectedMessage(updatedSelected || (sortedMessages.length > 0 ? sortedMessages[0] : null));
+    } else if (sortedMessages.length > 0) {
+        setSelectedMessage(sortedMessages[0]);
+    }
+
+  }, [initialMessages]);
+
+  useEffect(() => {
+    if (selectedMessage && !selectedMessage.read) {
+       handleSelectMessage(selectedMessage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMessage]);
+
 
   const handleSelectMessage = async (message: InboxMessage) => {
     setSelectedMessage(message);
     if (!message.read) {
-        const messageRef = doc(db, "inboxMessages", message.id);
-        await updateDoc(messageRef, { read: true });
+        try {
+            const messageRef = doc(db, "inboxMessages", message.id);
+            await updateDoc(messageRef, { read: true });
+        } catch (error) {
+            console.error("Error marking message as read:", error);
+        }
     }
   }
 
@@ -83,17 +92,18 @@ export function InboxTab() {
                                 </Avatar>
                                 <div className="flex-1">
                                     <div className={cn("font-semibold", !message.read && "font-bold")}>{message.from}</div>
-                                    <div className={cn("text-xs", !message.read ? "text-foreground" : "text-muted-foreground")}>
-                                      {formatDistanceToNow(message.timestamp?.toDate() || new Date(), {
-                                        addSuffix: true,
-                                        locale: ar
-                                      })}
-                                    </div>
                                 </div>
                             </div>
+                            <div className={cn("ml-auto text-xs", !message.read ? "text-foreground" : "text-muted-foreground")}>
+                              {formatDistanceToNow(message.timestamp?.toDate() || new Date(), {
+                                addSuffix: true,
+                                locale: ar
+                              })}
+                            </div>
                         </div>
-                        <div className={cn("line-clamp-2 text-xs", !message.read ? "text-foreground" : "text-muted-foreground")}>
-                            {message.title}
+                        <div className="font-semibold">{message.title}</div>
+                        <div className={cn("line-clamp-2 text-xs text-muted-foreground")}>
+                            {message.content}
                         </div>
                     </button>
                 ))}
@@ -110,22 +120,35 @@ export function InboxTab() {
           {selectedMessage ? (
              <div className="flex h-full flex-col">
                 <div className="flex items-center p-4 border-b">
-                    <h3 className="text-lg font-bold">{selectedMessage.title}</h3>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" disabled>
+                            <Archive className="h-4 w-4" />
+                            <span className="sr-only">أرشفة</span>
+                        </Button>
+                        <Button variant="outline" size="icon" disabled>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">حذف</span>
+                        </Button>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                        <div className="text-right">
+                            <div className="font-bold">{selectedMessage.from}</div>
+                            <div className="text-xs text-muted-foreground">إلى: {auth.currentUser?.displayName || "أنا"}</div>
+                        </div>
+                         <Avatar className="h-8 w-8">
+                            <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(selectedMessage.from)}`} />
+                            <AvatarFallback>{getPatientInitials(selectedMessage.from)}</AvatarFallback>
+                        </Avatar>
+                    </div>
                 </div>
-                 <div className="flex-1 p-6">
-                    <p className="whitespace-pre-wrap text-sm text-foreground">
+                <div className="p-4">
+                     <h3 className="text-lg font-bold">{selectedMessage.title}</h3>
+                </div>
+                 <Separator />
+                 <div className="flex-1 p-6 text-sm">
+                    <p className="whitespace-pre-wrap">
                        {selectedMessage.content}
                     </p>
-                </div>
-                 <div className="border-t p-4 flex items-center justify-end gap-2">
-                    <Button variant="outline" size="icon" disabled>
-                        <Archive className="h-4 w-4" />
-                        <span className="sr-only">أرشفة</span>
-                    </Button>
-                    <Button variant="outline" size="icon" disabled>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">حذف</span>
-                    </Button>
                 </div>
              </div>
           ) : (

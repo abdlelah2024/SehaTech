@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Sparkles, Loader2, Lightbulb, UserPlus } from "lucide-react"
+import { Calendar as CalendarIcon, Sparkles, Loader2, Lightbulb, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -33,28 +32,33 @@ import { useToast } from "@/hooks/use-toast"
 import { suggestOptimalAppointmentSlots, SuggestOptimalAppointmentSlotsInput, SuggestOptimalAppointmentSlotsOutput } from "@/ai/flows/suggest-optimal-appointment-slots"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { Appointment, Patient, Doctor } from "@/lib/types"
-import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, where, getDocs, orderBy } from "firebase/firestore"
 
 interface AppointmentSchedulerProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   doctorId?: string;
   selectedPatientId?: string;
   onAppointmentCreated?: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
   onPatientCreated?: (patient: Omit<Patient, 'id'>) => void;
-  context?: 'new-patient' | 'new-appointment';
+  context?: 'new-appointment' | 'new-patient';
   prefilledData?: { name?: string; phone?: string };
+  patients?: Patient[];
+  doctors?: Doctor[];
 }
 
 
 export function AppointmentScheduler({ 
+  isOpen,
+  onOpenChange,
   doctorId, 
   onAppointmentCreated, 
   onPatientCreated, 
   context = 'new-appointment',
   selectedPatientId: initialSelectedPatientId,
-  prefilledData = {}
+  prefilledData = {},
+  patients = [],
+  doctors = [],
 }: AppointmentSchedulerProps) {
-  const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(initialSelectedPatientId)
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId)
@@ -62,28 +66,11 @@ export function AppointmentScheduler({
   const [suggestedSlots, setSuggestedSlots] = useState<SuggestOptimalAppointmentSlotsOutput['suggestedSlots']>([])
   const { toast } = useToast()
   
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-
   const [newPatientName, setNewPatientName] = useState("")
   const [newPatientDob, setNewPatientDob] = useState<Date | undefined>()
   const [newPatientPhone, setNewPatientPhone] = useState("")
   const [newPatientGender, setNewPatientGender] = useState<Patient['gender']>("ذكر")
   const [newPatientAddress, setNewPatientAddress] = useState("")
-  
-  useEffect(() => {
-    if (!open) return;
-    const patientsUnsub = onSnapshot(query(collection(db, "patients")), (snap) => {
-        setPatients(snap.docs.map(doc => ({id: doc.id, ...doc.data()} as Patient)));
-    });
-    const doctorsUnsub = onSnapshot(query(collection(db, "doctors")), (snap) => {
-        setDoctors(snap.docs.map(doc => ({id: doc.id, ...doc.data()} as Doctor)));
-    });
-    return () => {
-        patientsUnsub();
-        doctorsUnsub();
-    }
-  }, [open]);
   
   useEffect(() => {
     setSelectedDoctorId(doctorId);
@@ -94,11 +81,11 @@ export function AppointmentScheduler({
   }, [initialSelectedPatientId]);
 
   useEffect(() => {
-    if (context === 'new-patient' && open) {
+    if (context === 'new-patient' && isOpen) {
       setNewPatientName(prefilledData.name || "");
       setNewPatientPhone(prefilledData.phone || "");
     }
-  }, [prefilledData, context, open]);
+  }, [prefilledData, context, isOpen]);
 
 
   const handleSuggestSlots = async () => {
@@ -118,15 +105,8 @@ export function AppointmentScheduler({
       const doctor = doctors.find(d => d.id === selectedDoctorId);
       if (!doctor) throw new Error("Doctor not found");
 
-      const appointmentsQuery = query(collection(db, "appointments"), 
-          where("patientId", "==", selectedPatientId), 
-          where("doctorId", "==", selectedDoctorId)
-      );
-      const querySnapshot = await getDocs(appointmentsQuery);
-      const appointmentHistory = querySnapshot.docs.map(doc => {
-          const data = doc.data() as Appointment;
-          return { date: format(new Date(data.dateTime), 'yyyy-MM-dd'), time: format(new Date(data.dateTime), 'HH:mm') }
-      });
+      // In a real app, you would fetch this from the backend
+      const appointmentHistory: SuggestOptimalAppointmentSlotsInput['appointmentHistory'] = [];
 
       const input: SuggestOptimalAppointmentSlotsInput = {
         patientId: selectedPatientId,
@@ -216,12 +196,6 @@ export function AppointmentScheduler({
       ? `${names[0][0]}${names[names.length - 1][0]}`
       : names[0]?.[0] || ""
   }
-
-  const getButtonText = () => {
-    if (context === 'new-patient') return 'إضافة مريض جديد';
-    if (doctorId || initialSelectedPatientId) return 'حجز موعد';
-    return 'موعد جديد';
-  }
   
   const resetAndClose = () => {
     setNewPatientName("");
@@ -232,10 +206,17 @@ export function AppointmentScheduler({
     setSelectedPatientId(initialSelectedPatientId);
     setSelectedDoctorId(doctorId);
     setDate(new Date());
-    setOpen(false);
     setSuggestedSlots([]);
     setIsSuggestingSlots(false);
+    onOpenChange(false);
   }
+
+  useEffect(() => {
+    if (!isOpen) {
+        resetAndClose();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
 
   const isNewPatientFlow = context === 'new-patient';
@@ -244,13 +225,7 @@ export function AppointmentScheduler({
 
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) resetAndClose(); else setOpen(true);}}>
-      <DialogTrigger asChild>
-        <Button>
-            {isNewPatientFlow && <UserPlus className="ml-2 h-4 w-4" />}
-            {getButtonText()}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isNewPatientFlow ? 'إنشاء ملف مريض جديد' : 'حجز موعد جديد'}</DialogTitle>

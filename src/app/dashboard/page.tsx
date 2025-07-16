@@ -1,9 +1,7 @@
 
-
-
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import {
   Bell,
   CircleUser,
@@ -23,7 +21,7 @@ import {
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
 
 import { Badge } from "@/components/ui/badge"
@@ -53,23 +51,26 @@ import { InboxTab } from "@/components/dashboard/inbox-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
-import type { Patient, User, UserRole, Doctor, Appointment, Transaction, AuditLog } from "@/lib/types"
+import type { Patient, User, UserRole, Doctor, Appointment, Transaction, AuditLog, InboxMessage } from "@/lib/types"
 import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 import { usePermissions } from "@/hooks/use-permissions"
+import { useToast } from "@/hooks/use-toast"
+import { logAuditEvent } from "@/lib/audit-log-service"
 
 
 type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "settings" | "audit-log" | "inbox";
 
 
 export default function Dashboard() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') as TabValue || 'dashboard';
+  const { toast } = useToast()
 
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('receptionist'); 
-  const permissions = usePermissions(currentUserRole);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const permissions = usePermissions(currentUser?.role);
 
   const [allData, setAllData] = useState<{
     patients: Patient[];
@@ -78,6 +79,7 @@ export default function Dashboard() {
     transactions: Transaction[];
     users: User[];
     auditLogs: AuditLog[];
+    inboxMessages: InboxMessage[];
   }>({
     patients: [],
     doctors: [],
@@ -85,26 +87,23 @@ export default function Dashboard() {
     transactions: [],
     users: [],
     auditLogs: [],
+    inboxMessages: [],
   });
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
-      if (authUser) {
-        setUser(authUser);
-        const userDocRef = doc(db, "users", authUser.uid);
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setFirebaseUser(user);
+        const userDocRef = doc(db, "users", user.uid);
         const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
-            setCurrentUserRole(doc.data().role as UserRole);
+            setCurrentUser({ id: doc.id, ...doc.data() } as User);
           }
         });
         return () => unsubscribeUser();
       } else {
         router.push('/');
       }
-    });
-    
-    const unsubPatients = onSnapshot(doc(db, "users", "admin"), (snapshot) => {
-        // Dummy listener to keep connection alive if needed, or replace with real listeners
     });
 
     const unsubAppointments = onSnapshot(collection(db, "appointments"), snap => setAllData(prev => ({...prev, appointments: snap.docs.map(d => ({id: d.id, ...d.data()}) as Appointment)})));
@@ -113,17 +112,17 @@ export default function Dashboard() {
     const unsubTransactions = onSnapshot(collection(db, "transactions"), snap => setAllData(prev => ({...prev, transactions: snap.docs.map(d => ({id: d.id, ...d.data()}) as Transaction)})));
     const unsubUsers = onSnapshot(collection(db, "users"), snap => setAllData(prev => ({...prev, users: snap.docs.map(d => ({id: d.id, ...d.data()}) as User)})));
     const unsubAuditLogs = onSnapshot(collection(db, "auditLogs"), snap => setAllData(prev => ({...prev, auditLogs: snap.docs.map(d => ({id: d.id, ...d.data()}) as AuditLog)})));
-
+    const unsubInbox = onSnapshot(collection(db, "inboxMessages"), snap => setAllData(prev => ({...prev, inboxMessages: snap.docs.map(d => ({id: d.id, ...d.data()}) as InboxMessage)})));
 
     return () => {
       unsubscribeAuth();
-      unsubPatients();
       unsubAppointments();
       unsubPatientsColl();
       unsubDoctors();
       unsubTransactions();
       unsubUsers();
       unsubAuditLogs();
+      unsubInbox();
     };
   }, [router]);
 
@@ -136,8 +135,8 @@ export default function Dashboard() {
 
   const navLinks = [
     { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard", permission: "viewDashboard" },
-    { id: "inbox", label: "البريد الوارد", icon: Inbox, badge: "3", href: "/dashboard?tab=inbox", permission: "useChat" },
-    { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments", permission: "viewAppointments" },
+    { id: "inbox", label: "البريد الوارد", icon: Inbox, badge: allData.inboxMessages.filter(m => !m.read).length.toString(), href: "/dashboard?tab=inbox", permission: "useChat" },
+    { id: "appointments", label: "المواعيد", icon: CalendarDays, href: "/dashboard?tab=appointments", permission: "viewAppointments" },
     { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors", permission: "viewDoctors" },
     { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients", permission: "viewPatients" },
     { id: "billing", label: "الفواتير", icon: CreditCard, href: "/dashboard?tab=billing", permission: "viewBilling" },
@@ -151,7 +150,7 @@ export default function Dashboard() {
   const accessibleLinks = useMemo(() => {
     if (!permissions) return [];
     return navLinks.filter(link => permissions[link.permission as keyof typeof permissions]);
-  }, [permissions]);
+  }, [permissions, navLinks]);
   
   useEffect(() => {
     const tab = searchParams.get('tab') as TabValue;
@@ -204,7 +203,7 @@ export default function Dashboard() {
         >
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
-          {link.badge && (
+          {link.badge && parseInt(link.badge) > 0 && (
              <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
@@ -213,12 +212,54 @@ export default function Dashboard() {
       ))}
     </nav>
   );
+  
+    const handleAppointmentCreated = useCallback(async (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
+    if (!currentUser) return;
+     try {
+        const docRef = await addDoc(collection(db, "appointments"), {
+            ...newAppointmentData,
+            status: 'Scheduled',
+        });
+        toast({
+            title: "تم حجز الموعد بنجاح!",
+            description: `تم حجز موعد جديد لـ ${newAppointmentData.patientName}.`,
+        });
+        await logAuditEvent('إنشاء موعد', { appointmentId: docRef.id, patientName: newAppointmentData.patientName }, currentUser.id);
+        setIsAppointmentModalOpen(false);
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من حجز الموعد.",
+        });
+    }
+  }, [currentUser, toast]);
+  
+  const handlePatientCreated = useCallback(async (newPatientData: Omit<Patient, 'id'>) => {
+    if (!currentUser) return;
+    try {
+        const docRef = await addDoc(collection(db, "patients"), {
+            ...newPatientData,
+            createdAt: serverTimestamp(),
+        });
+        toast({
+            title: "تم إنشاء ملف المريض بنجاح!",
+        });
+        await logAuditEvent('إضافة مريض', { patientId: docRef.id, patientName: newPatientData.name }, currentUser.id);
+        setIsAppointmentModalOpen(false); // Close appointment scheduler if it was open for a new patient
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "حدث خطأ!",
+            description: "لم نتمكن من إضافة المريض.",
+        });
+    }
+  }, [currentUser, toast]);
 
-  const handlePatientCreated = (newPatient: Patient) => {
-    setIsAppointmentModalOpen(false);
-  }
 
-  if (!user || !permissions) {
+  if (!firebaseUser || !permissions || !currentUser) {
     return (
         <div className="flex h-screen items-center justify-center">
             <p>جار التحميل...</p>
@@ -274,6 +315,7 @@ export default function Dashboard() {
                   setSelectedPatientForAppointment(patient);
                   setIsAppointmentModalOpen(true);
                 }}
+                onPatientCreated={handlePatientCreated}
              />
           </div>
           <DropdownMenu>
@@ -284,7 +326,7 @@ export default function Dashboard() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>{firebaseUser.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleTabChange('settings')}>الإعدادات</DropdownMenuItem>
               <DropdownMenuItem>الدعم</DropdownMenuItem>
@@ -310,22 +352,22 @@ export default function Dashboard() {
               />
             </TabsContent>
             <TabsContent value="inbox">
-              <InboxTab />
+              <InboxTab messages={allData.inboxMessages} />
             </TabsContent>
             <TabsContent value="appointments">
-              <AppointmentsTab appointments={allData.appointments} doctors={allData.doctors} />
+              <AppointmentsTab appointments={allData.appointments} doctors={allData.doctors} patients={allData.patients} onAppointmentCreated={handleAppointmentCreated}/>
             </TabsContent>
             <TabsContent value="doctors">
               <DoctorsTab doctors={allData.doctors}/>
             </TabsContent>
             <TabsContent value="patients">
-              <PatientsTab patients={allData.patients} />
+              <PatientsTab patients={allData.patients} onPatientCreated={handlePatientCreated} />
             </TabsContent>
             <TabsContent value="billing">
-              <BillingTab transactions={allData.transactions} patients={allData.patients} />
+              <BillingTab transactions={allData.transactions} patients={allData.patients} appointments={allData.appointments} />
             </TabsContent>
              <TabsContent value="chat">
-              <ChatTab />
+              <ChatTab currentUser={currentUser} allUsers={allData.users}/>
             </TabsContent>
             <TabsContent value="analytics">
               <AnalyticsTab appointments={allData.appointments}/>
@@ -334,7 +376,7 @@ export default function Dashboard() {
               <ReportsTab />
             </TabsContent>
             <TabsContent value="settings">
-              <SettingsTab users={allData.users} />
+              <SettingsTab currentUser={currentUser} users={allData.users} />
             </TabsContent>
             <TabsContent value="audit-log">
               <AuditLogTab logs={allData.auditLogs} users={allData.users} />
@@ -350,12 +392,15 @@ export default function Dashboard() {
         onOpenChange={(isOpen) => !isOpen && setSelectedPatientForProfile(null)}
       />
     )}
-     {isAppointmentModalOpen && selectedPatientForAppointment && (
+     {isAppointmentModalOpen && (
         <AppointmentScheduler
-            onAppointmentCreated={() => setIsAppointmentModalOpen(false)}
+            isOpen={isAppointmentModalOpen}
+            onOpenChange={setIsAppointmentModalOpen}
+            onAppointmentCreated={handleAppointmentCreated}
             onPatientCreated={handlePatientCreated}
-            selectedPatientId={selectedPatientForAppointment.id}
-            context="new-appointment"
+            selectedPatientId={selectedPatientForAppointment?.id}
+            patients={allData.patients}
+            doctors={allData.doctors}
         />
      )}
     </>

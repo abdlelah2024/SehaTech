@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { AppointmentScheduler } from "../appointment-scheduler"
-import type { Appointment, Doctor } from "@/lib/types"
+import type { Appointment, Doctor, Patient } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, X, Search } from "lucide-react"
+import { Calendar as CalendarIcon, X, Search } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isSameDay } from "date-fns"
 import { ar } from "date-fns/locale"
@@ -65,38 +65,19 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
 interface AppointmentsTabProps {
   appointments: Appointment[];
   doctors: Doctor[];
+  patients: Patient[];
+  onAppointmentCreated: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
 }
 
-export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps) {
+export function AppointmentsTab({ appointments, doctors, patients, onAppointmentCreated }: AppointmentsTabProps) {
   const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const { toast } = useToast()
 
-  const handleAppointmentCreated = async (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
-    if (!currentUser) return;
-     try {
-        const docRef = await addDoc(collection(db, "appointments"), {
-            ...newAppointmentData,
-            status: 'Scheduled',
-        });
-        toast({
-            title: "تم حجز الموعد بنجاح!",
-            description: `تم حجز موعد جديد.`,
-        });
-        await logAuditEvent('إنشاء موعد', { appointmentId: docRef.id, patientName: newAppointmentData.patientName }, currentUser.uid);
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        toast({
-            variant: "destructive",
-            title: "حدث خطأ!",
-            description: "لم نتمكن من حجز الموعد.",
-        });
-    }
-  };
-  
   const handleClearFilters = () => {
     setSearchTerm("");
     setFilterDate(undefined);
@@ -131,7 +112,7 @@ export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps)
                     service: `${doctor.specialty} Consultation`,
                 });
                 toastDescription += ` وتم إنشاء فاتورة بمبلغ ${doctor.servicePrice} ﷼ تلقائياً.`;
-                await logAuditEvent('إنشاء فاتورة (تلقائي)', { transactionId: transactionRef.id, patientName: appointment.patientName, amount: doctor.servicePrice }, currentUser.uid);
+                await logAuditEvent('إنشاء فاتورة (تلقائي)', { transactionId: transactionRef.id, patientName: appointment.patientName, amount: doctor.servicePrice }, currentUser.id);
             } else {
                  toastDescription += ` (لم يتم إنشاء فاتورة لعدم تحديد سعر خدمة للطبيب).`;
             }
@@ -141,7 +122,7 @@ export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps)
             title: "تم تحديث الحالة بنجاح",
             description: toastDescription
         });
-        await logAuditEvent('تحديث حالة موعد', { appointmentId, newStatus }, currentUser.uid);
+        await logAuditEvent('تحديث حالة موعد', { appointmentId, newStatus }, currentUser.id);
 
     } catch (e) {
          console.error("Error updating document: ", e);
@@ -165,6 +146,7 @@ export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps)
   }, [appointments, searchTerm, filterStatus, filterDoctor, filterDate]);
 
   return (
+    <>
     <Card>
        <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -172,7 +154,7 @@ export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps)
                 <CardTitle>المواعيد</CardTitle>
                 <CardDescription>إدارة وعرض جميع مواعيد المرضى.</CardDescription>
             </div>
-            <AppointmentScheduler onAppointmentCreated={handleAppointmentCreated} />
+            <Button onClick={() => setIsSchedulerOpen(true)}>موعد جديد</Button>
           </div>
           <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <div className="relative w-full sm:w-auto flex-grow">
@@ -300,5 +282,15 @@ export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps)
         </div>
       </CardContent>
     </Card>
+    {isSchedulerOpen && (
+        <AppointmentScheduler
+          isOpen={isSchedulerOpen}
+          onOpenChange={setIsSchedulerOpen}
+          onAppointmentCreated={onAppointmentCreated}
+          patients={patients}
+          doctors={doctors}
+        />
+    )}
+    </>
   )
 }

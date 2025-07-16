@@ -42,9 +42,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
-import type { Patient, Appointment } from "@/lib/types"
+import type { Patient } from "@/lib/types"
 import { EditPatientDialog } from "./edit-patient-dialog"
-import { Search, Edit, Trash2, X } from "lucide-react"
+import { Search, Edit, Trash2, X, UserPlus } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -65,15 +65,17 @@ function calculateAge(dob: string): number {
 
 interface PatientsTabProps {
   patients: Patient[];
+  onPatientCreated: (patient: Omit<Patient, 'id'>) => void;
 }
 
-export function PatientsTab({ patients }: PatientsTabProps) {
+export function PatientsTab({ patients, onPatientCreated }: PatientsTabProps) {
   const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGender, setFilterGender] = useState("all")
   const [selectedPatientForProfile, setSelectedPatientForProfile] = useState<Patient | null>(null)
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null)
   const [appointmentsCount, setAppointmentsCount] = useState<{ [key: string]: number }>({})
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -88,29 +90,6 @@ export function PatientsTab({ patients }: PatientsTabProps) {
     });
     return () => unsubscribe();
   }, []);
-  
-  const handlePatientCreated = async (newPatientData: Omit<Patient, 'id'>) => {
-    if (!currentUser) return;
-    try {
-        const docRef = await addDoc(collection(db, "patients"), {
-            ...newPatientData,
-            createdAt: serverTimestamp(),
-        });
-        toast({
-            title: "تم إنشاء ملف المريض بنجاح!",
-        });
-        const createdPatient = { id: docRef.id, ...newPatientData };
-        setSelectedPatientForProfile(createdPatient as Patient);
-        await logAuditEvent('إضافة مريض', { patientId: docRef.id, patientName: newPatientData.name }, currentUser.uid);
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        toast({
-            variant: "destructive",
-            title: "حدث خطأ!",
-            description: "لم نتمكن من إضافة المريض.",
-        });
-    }
-  };
 
   const handlePatientUpdated = async (updatedPatient: Patient) => {
     if (!currentUser) return;
@@ -124,7 +103,7 @@ export function PatientsTab({ patients }: PatientsTabProps) {
         description: `تم تحديث ملف المريض ${updatedPatient.name}.`,
       });
       setSelectedPatientForEdit(null);
-      await logAuditEvent('تعديل مريض', { patientId: id, patientName: updatedPatient.name }, currentUser.uid);
+      await logAuditEvent('تعديل مريض', { patientId: id, patientName: updatedPatient.name }, currentUser.id);
     } catch (e) {
       console.error("Error updating document: ", e);
       toast({ variant: "destructive", title: "خطأ", description: "لم نتمكن من تحديث بيانات المريض." });
@@ -136,7 +115,7 @@ export function PatientsTab({ patients }: PatientsTabProps) {
     try {
       await deleteDoc(doc(db, "patients", patient.id));
       toast({ title: "تم الحذف بنجاح", description: "تم حذف ملف المريض من النظام." });
-      await logAuditEvent('حذف مريض', { patientId: patient.id, patientName: patient.name }, currentUser.uid);
+      await logAuditEvent('حذف مريض', { patientId: patient.id, patientName: patient.name }, currentUser.id);
     } catch (e) {
       console.error("Error deleting document: ", e);
       toast({ variant: "destructive", title: "خطأ!", description: "لم نتمكن من حذف المريض." });
@@ -173,10 +152,10 @@ export function PatientsTab({ patients }: PatientsTabProps) {
                   عرض، إضافة، وتعديل سجلات المرضى في النظام.
                 </CardDescription>
               </div>
-              <AppointmentScheduler
-                context="new-patient"
-                onPatientCreated={handlePatientCreated}
-              />
+              <Button onClick={() => setIsSchedulerOpen(true)}>
+                  <UserPlus className="ml-2 h-4 w-4" />
+                  إضافة مريض جديد
+              </Button>
            </div>
            <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <div className="relative w-full sm:w-auto flex-grow">
@@ -299,6 +278,14 @@ export function PatientsTab({ patients }: PatientsTabProps) {
           onPatientUpdated={handlePatientUpdated}
         />
       )}
+       {isSchedulerOpen && (
+          <AppointmentScheduler
+            isOpen={isSchedulerOpen}
+            onOpenChange={setIsSchedulerOpen}
+            context="new-patient"
+            onPatientCreated={onPatientCreated}
+          />
+       )}
     </>
   )
 }
