@@ -95,18 +95,7 @@ export function SettingsTab() {
   useEffect(() => {
     const unsubUsers = onSnapshot(query(collection(db, "users")), (snap) => {
         const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
-
-        const presenceRef = ref(rtdb, 'users');
-        const unsubPresence = onValue(presenceRef, (snapshot) => {
-            const presenceData = snapshot.val();
-            const combinedUsers = firestoreUsers.map(user => ({
-                ...user,
-                presence: presenceData?.[user.id]
-            }));
-            setUsers(combinedUsers);
-        });
-
-        return () => unsubPresence();
+        setUsers(firestoreUsers);
     });
 
     return () => unsubUsers();

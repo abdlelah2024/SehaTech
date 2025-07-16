@@ -15,12 +15,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getPatientInitials } from "@/lib/utils"
 import { cn } from "@/lib/utils"
-import type { User, Conversation, Message } from "@/lib/types"
-import { Send, Search, MessageSquare } from "lucide-react"
-import { db } from "@/lib/firebase"
+import type { User, Conversation, Message, UserPresence } from "@/lib/types"
+import { Send, Search, MessageSquare, Circle } from "lucide-react"
+import { db, rtdb } from "@/lib/firebase"
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore"
-import { auth } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
 import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+import { formatDistanceToNow } from "date-fns"
+import { ar } from "date-fns/locale"
 
 export function ChatTab() {
   const [currentUser] = useAuthState(auth);
@@ -32,12 +35,25 @@ export function ChatTab() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const q = query(collection(db, "users"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const users = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as User);
-        setAllUsers(users);
+    // Get users from Firestore
+    const usersQuery = query(collection(db, "users"));
+    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+        const firestoreUsers = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as User);
+        
+        // Get presence info from RTDB
+        const presenceRef = ref(rtdb, 'users');
+        const unsubPresence = onValue(presenceRef, (presenceSnap) => {
+            const presenceData = presenceSnap.val() || {};
+            const combinedUsers = firestoreUsers.map(user => ({
+                ...user,
+                presence: presenceData[user.id]
+            }));
+            setAllUsers(combinedUsers);
+        });
+
+        return () => unsubPresence();
     });
-    return unsubscribe;
+    return () => unsubUsers();
   }, []);
 
   const filteredUsers = useMemo(() => {
@@ -105,12 +121,22 @@ export function ChatTab() {
           {selectedUser && currentUser ? (
             <>
               <div className="flex items-center p-4 border-b">
-                <Avatar className="ml-4">
+                <Avatar className="ml-4 relative">
                   <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(selectedUser.name)}`} data-ai-hint="person avatar" />
                   <AvatarFallback>{getPatientInitials(selectedUser.name)}</AvatarFallback>
+                  {selectedUser.presence?.state === 'online' && (
+                    <div className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
+                  )}
                 </Avatar>
                 <div className="flex-grow text-right">
                   <p className="font-semibold">{selectedUser.name}</p>
+                   <p className="text-xs text-muted-foreground">
+                    {selectedUser.presence?.state === 'online'
+                      ? 'متصل'
+                      : selectedUser.presence?.last_changed
+                      ? `آخر ظهور: ${formatDistanceToNow(new Date(selectedUser.presence.last_changed), { addSuffix: true, locale: ar })}`
+                      : 'غير متصل'}
+                  </p>
                 </div>
               </div>
               <ScrollArea className="flex-grow p-4">
@@ -161,6 +187,7 @@ export function ChatTab() {
                     size="icon"
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7"
                     onClick={handleSendMessage}
+                    disabled={!message.trim()}
                   >
                     <Send className="h-4 w-4" />
                     <span className="sr-only">إرسال</span>
@@ -203,6 +230,9 @@ export function ChatTab() {
                 <Avatar className="relative">
                   <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(user.name)}`} data-ai-hint="person avatar" />
                   <AvatarFallback>{getPatientInitials(user.name)}</AvatarFallback>
+                   {user.presence?.state === 'online' && (
+                    <div className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-1 ring-background" />
+                  )}
                 </Avatar>
                 <div className="flex-grow">
                   <p className="font-semibold">{user.name}</p>

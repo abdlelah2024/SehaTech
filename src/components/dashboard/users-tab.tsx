@@ -56,12 +56,8 @@ import { db, auth } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
+import { roleTranslations } from "@/lib/permissions"
 
-const roleTranslations: { [key in UserRole]: string } = {
-  admin: 'مدير',
-  receptionist: 'موظف استقبال',
-  doctor: 'طبيب',
-};
 
 export function UsersTab() {
   const [authUser] = useAuthState(auth);
