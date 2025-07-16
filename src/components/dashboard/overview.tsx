@@ -109,7 +109,7 @@ export function Overview() {
         const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
 
         const presenceRef = ref(rtdb, 'users');
-        onValue(presenceRef, (snapshot) => {
+        const unsubPresence = onValue(presenceRef, (snapshot) => {
             const presenceData = snapshot.val();
             const combinedUsers = firestoreUsers.map(user => ({
                 ...user,
@@ -117,6 +117,8 @@ export function Overview() {
             }));
             setUsersState(combinedUsers);
         });
+
+        return () => unsubPresence();
     });
 
     return () => {
@@ -467,7 +469,7 @@ export function Overview() {
                                 </Avatar>
                                 <div>
                                     <p className="font-medium">{user.name}</p>
-                                    <p className="text-xs text-muted-foreground">{user.role}</p>
+                                    <p className="text-xs text-muted-foreground">{roleTranslations[user.role]}</p>
                                 </div>
                             </div>
                             {user.presence?.state === 'online' ? (

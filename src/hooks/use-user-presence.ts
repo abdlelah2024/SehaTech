@@ -11,21 +11,29 @@ export function useUserPresence() {
 
   useEffect(() => {
     if (user) {
-      const myConnectionsRef = ref(rtdb, `users/${user.uid}/connections`);
-      const lastOnlineRef = ref(rtdb, `users/${user.uid}/last_changed`);
-      const userStatusRef = ref(rtdb, `users/${user.uid}/state`);
+      const userStatusRef = ref(rtdb, `users/${user.uid}`);
+      const isOfflineForDatabase = {
+        state: 'offline',
+        last_changed: serverTimestamp(),
+      };
+      const isOnlineForDatabase = {
+        state: 'online',
+        last_changed: serverTimestamp(),
+      };
 
-      const con = ref(rtdb, '.info/connected');
+      const conRef = ref(rtdb, '.info/connected');
 
-      onValue(con, (snap) => {
-        if (snap.val() === true) {
-          const conRef = ref(rtdb, `users/${user.uid}`);
-          
-          onDisconnect(userStatusRef).set("offline");
-          onDisconnect(lastOnlineRef).set(serverTimestamp());
-
-          set(userStatusRef, 'online');
+      onValue(conRef, (snap) => {
+        if (snap.val() === false) {
+          // If not connected, don't do anything
+          return;
         }
+        
+        // When the user disconnects, set their status to offline
+        onDisconnect(userStatusRef).set(isOfflineForDatabase).then(() => {
+          // When the user is connected, set their status to online
+          set(userStatusRef, isOnlineForDatabase);
+        });
       });
     }
   }, [user]);

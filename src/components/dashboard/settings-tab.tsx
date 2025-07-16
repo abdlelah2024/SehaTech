@@ -54,8 +54,9 @@ import {
 import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { EditUserDialog } from "./edit-user-dialog"
-import { db, auth } from "@/lib/firebase"
+import { db, auth, rtdb } from "@/lib/firebase"
 import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
+import { ref, onValue } from "firebase/database"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { permissions as allPermissions, permissionDetails, PermissionCategory, PermissionKey, roleTranslations } from "@/lib/permissions"
@@ -92,12 +93,23 @@ export function SettingsTab() {
   }, [selectedRole]);
 
   useEffect(() => {
-    const q = query(collection(db, "users"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const userList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      setUsers(userList);
+    const unsubUsers = onSnapshot(query(collection(db, "users")), (snap) => {
+        const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
+
+        const presenceRef = ref(rtdb, 'users');
+        const unsubPresence = onValue(presenceRef, (snapshot) => {
+            const presenceData = snapshot.val();
+            const combinedUsers = firestoreUsers.map(user => ({
+                ...user,
+                presence: presenceData?.[user.id]
+            }));
+            setUsers(combinedUsers);
+        });
+
+        return () => unsubPresence();
     });
-    return () => unsubscribe();
+
+    return () => unsubUsers();
   }, []);
   
   const filteredUsers = useMemo(() => {

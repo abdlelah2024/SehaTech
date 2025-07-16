@@ -68,7 +68,7 @@ export interface User {
 
 export interface UserPresence {
     state: 'online' | 'offline';
-    last_changed: number; // Firestore server timestamp
+    last_changed: number; // RTDB server timestamp
 }
 
 export interface Message {
