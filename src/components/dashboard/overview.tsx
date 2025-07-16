@@ -1,6 +1,4 @@
 
-
-
 "use client"
 import { Users, CalendarPlus, Stethoscope, Activity, Wifi, Circle, Database, CheckCircle, XCircle, UserPlus, FileText, X } from "lucide-react"
 import {
@@ -213,7 +211,7 @@ export function Overview({ appointments, transactions, patients, doctors, users 
   }
 
   return (
-    <div className="mt-4 space-y-6">
+    <div className="space-y-6">
        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
          <div className="flex-1">
             <h1 className="text-2xl font-bold">نظرة عامة</h1>
@@ -479,3 +477,5 @@ export function Overview({ appointments, transactions, patients, doctors, users 
     </div>
   )
 }
+
+    

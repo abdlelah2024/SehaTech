@@ -51,7 +51,7 @@ import { InboxTab } from "@/components/dashboard/inbox-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
-import type { Patient, User, UserRole, Doctor, Appointment, Transaction, AuditLog, InboxMessage } from "@/lib/types"
+import type { Patient, User, Doctor, Appointment, Transaction, AuditLog, InboxMessage } from "@/lib/types"
 import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 import { usePermissions } from "@/hooks/use-permissions"
@@ -149,8 +149,9 @@ export default function Dashboard() {
   
   const accessibleLinks = useMemo(() => {
     if (!permissions) return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return navLinks.filter(link => permissions[link.permission as keyof typeof permissions]);
-  }, [permissions, navLinks]);
+  }, [permissions]);
   
   useEffect(() => {
     const tab = searchParams.get('tab') as TabValue;
@@ -203,7 +204,7 @@ export default function Dashboard() {
         >
           <link.icon className={cn("h-4 w-4", isMobile && "h-5 w-5")} />
           {link.label}
-          {link.badge && parseInt(link.badge) > 0 && (
+          {link.badge && parseInt(link.badge, 10) > 0 && (
              <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
               {link.badge}
             </Badge>
@@ -406,3 +407,6 @@ export default function Dashboard() {
     </>
   )
 }
+
+
+    

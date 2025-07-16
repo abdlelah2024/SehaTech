@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -365,7 +364,7 @@ export function SettingsTab({ currentUser, users }: SettingsTabProps) {
                             {permissions.deleteUser && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={currentUser?.id === user.id}>
                                         <Trash2 className="h-4 w-4" />
                                         <span className="sr-only">حذف</span>
                                     </Button>
@@ -466,3 +465,5 @@ export function SettingsTab({ currentUser, users }: SettingsTabProps) {
     </div>
   )
 }
+
+    

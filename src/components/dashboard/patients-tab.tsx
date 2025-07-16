@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -46,7 +45,7 @@ import type { Patient } from "@/lib/types"
 import { EditPatientDialog } from "./edit-patient-dialog"
 import { Search, Edit, Trash2, X, UserPlus } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { collection, onSnapshot, query, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { logAuditEvent } from "@/lib/audit-log-service"
 import { useAuthState } from "react-firebase-hooks/auth"
@@ -289,3 +288,5 @@ export function PatientsTab({ patients, onPatientCreated }: PatientsTabProps) {
     </>
   )
 }
+
+    
