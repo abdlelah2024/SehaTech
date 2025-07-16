@@ -1,32 +1,25 @@
 
-// A script to seed the Firestore database with initial data.
-// This is useful for development and testing purposes.
-// It creates a set of users, doctors, patients, appointments, and transactions.
-// To run this script, use `npm run db:seed`.
-
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
+import {initializeApp} from 'firebase/app';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  deleteUser,
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  setDoc, 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  setDoc,
   doc,
   writeBatch,
-  query,
-  getDocs
+  serverTimestamp,
+  getDocs,
 } from 'firebase/firestore';
-import { getDatabase, ref, set } from "firebase/database";
+import {getDatabase, ref, set} from 'firebase/database';
+import {config} from 'dotenv';
 
-import dotenv from 'dotenv';
-
-// Load environment variables from .env file in the root directory
-dotenv.config({ path: './.env' });
-
+config({path: '.env.local'});
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -38,174 +31,330 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-if (!firebaseConfig.projectId) {
-    console.error("Firebase configuration is missing. Make sure your .env file is set up correctly in the root directory.");
-    process.exit(1);
-}
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
-const adminUser = {
-  email: 'abdlelah2013@gmail.com',
-  password: '123456',
-  role: 'admin',
-  name: 'عبدالإله القدسي'
+const getPatientInitials = name => {
+  if (!name) return '';
+  const names = name.split(' ');
+  return names.length > 1
+    ? `${names[0][0]}${names[names.length - 1][0]}`
+    : names[0]?.[0] || '';
 };
 
-const otherUsers = [
-    { email: 'doctor.ahmed@example.com', password: 'password123', role: 'doctor', name: 'د. أحمد قايد سالم' },
-    { email: 'reception.fatima@example.com', password: 'password123', role: 'receptionist', name: 'فاطمة علي' }
+// --- Data Definitions ---
+
+const users = [
+  {
+    email: 'abdlelah2013@gmail.com',
+    password: '123456',
+    name: 'عبدالإله القدسي',
+    role: 'admin',
+  },
+  {
+    email: 'doctor.ali@example.com',
+    password: 'password123',
+    name: 'علي محسن',
+    role: 'doctor',
+  },
+  {
+    email: 'reception.sara@example.com',
+    password: 'password123',
+    name: 'سارة عبدالله',
+    role: 'receptionist',
+  },
 ];
 
 const doctors = [
-  { name: 'أحمد قايد سالم', specialty: 'باطنية', image: `https://placehold.co/100x100.png?text=A`, isAvailableToday: true, nextAvailable: 'غداً، 10:00 ص', servicePrice: 5000, freeReturnDays: 14, availableDays: ['السبت', 'الاثنين', 'الأربعاء'], availability: [ { date: '2025-07-20', slots: ['10:00', '10:30', '11:00'] }, { date: '2025-07-21', slots: ['14:00', '14:30'] }] },
-  { name: 'سارة المخلافي', specialty: 'أطفال', image: `https://placehold.co/100x100.png?text=S`, isAvailableToday: false, nextAvailable: 'بعد غد، 9:00 ص', servicePrice: 4500, freeReturnDays: 10, availableDays: ['الأحد', 'الثلاثاء'], availability: [ { date: '2025-07-22', slots: ['09:00', '09:30', '10:00'] }] },
-  { name: 'خالد العمري', specialty: 'عظام', image: `https://placehold.co/100x100.png?text=K`, isAvailableToday: true, nextAvailable: 'اليوم، 4:00 م', servicePrice: 6000, freeReturnDays: 7, availableDays: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'], availability: [ { date: '2025-07-19', slots: ['16:00', '16:30', '17:00'] } ]},
+  {
+    name: 'أحمد محمود',
+    specialty: 'أمراض القلب',
+    image: `https://placehold.co/100x100.png?text=أ`,
+    nextAvailable: 'غداً، 10:00 ص',
+    isAvailableToday: true,
+    servicePrice: 7000,
+    freeReturnDays: 14,
+    availableDays: ['السبت', 'الاثنين', 'الأربعاء'],
+    availability: [
+      {date: '2024-07-20', slots: ['10:00', '11:00', '12:00']},
+      {date: '2024-07-22', slots: ['09:00', '10:00', '11:00']},
+    ],
+  },
+  {
+    name: 'فاطمة الزهراء',
+    specialty: 'طب الأطفال',
+    image: `https://placehold.co/100x100.png?text=ف`,
+    nextAvailable: 'اليوم، 04:00 م',
+    isAvailableToday: true,
+    servicePrice: 5000,
+    freeReturnDays: 10,
+    availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
+    availability: [
+      {date: '2024-07-21', slots: ['16:00', '17:00', '18:00']},
+      {date: '2024-07-23', slots: ['15:00', '16:00', '17:00']},
+    ],
+  },
+  {
+    name: 'يوسف إبراهيم',
+    specialty: 'الجلدية',
+    image: `https://placehold.co/100x100.png?text=ي`,
+    nextAvailable: 'بعد 3 أيام',
+    isAvailableToday: false,
+    servicePrice: 6000,
+    freeReturnDays: 14,
+    availableDays: ['الأحد', 'الثلاثاء'],
+    availability: [],
+  },
+  {
+    name: 'مريم علي',
+    specialty: 'النساء والتوليد',
+    image: `https://placehold.co/100x100.png?text=م`,
+    nextAvailable: 'غداً، 09:00 ص',
+    isAvailableToday: true,
+    servicePrice: 8000,
+    availableDays: ['السبت', 'الاثنين', 'الخميس'],
+    availability: [],
+  },
 ];
 
 const patients = [
-  { name: 'علي محمد أحمد', dob: '1985-05-20', gender: 'ذكر', phone: '777123456', address: 'صنعاء، شارع حده', avatarUrl: `https://placehold.co/40x40.png?text=AM` },
-  { name: 'فاطمة عبدالله', dob: '1992-11-15', gender: 'أنثى', phone: '777654321', address: 'صنعاء، شارع الزبيري', avatarUrl: `https://placehold.co/40x40.png?text=FA` },
-  { name: 'صالح سريع', dob: '1978-01-30', gender: 'ذكر', phone: '777987654', address: 'صنعاء، الدائري', avatarUrl: `https://placehold.co/40x40.png?text=SS` },
+  {
+    name: 'خالد صالح',
+    dob: '1985-05-20',
+    gender: 'ذكر',
+    phone: '777123456',
+    address: 'صنعاء, شارع حدة',
+  },
+  {
+    name: 'نورة عبدالله',
+    dob: '1992-11-10',
+    gender: 'أنثى',
+    phone: '777654321',
+    address: 'عدن, المعلا',
+  },
+  {
+    name: 'سامي أحمد',
+    dob: '2018-01-15',
+    gender: 'ذكر',
+    phone: '777987654',
+    address: 'تعز, شارع جمال',
+  },
 ];
 
-
-async function seedDatabase() {
-  console.log('Starting database seeding...');
-  
-  const batch = writeBatch(db);
-
-  try {
-    // 1. Create users in Auth and add to Firestore
-    console.log('Creating users...');
-    const allUsersToCreate = [adminUser, ...otherUsers];
-    const userIds = {};
-
-    for (const user of allUsersToCreate) {
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
-            const uid = userCredential.user.uid;
-            userIds[user.email] = uid;
-            const userDocRef = doc(db, 'users', uid);
-            batch.set(userDocRef, {
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                createdAt: new Date(),
-            });
-            console.log(`Successfully created user: ${user.email}`);
-        } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                console.log(`User ${user.email} already exists. Signing in to get UID.`);
-                const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
-                userIds[user.email] = userCredential.user.uid;
-            } else {
-                throw error;
-            }
-        }
+const inboxMessages = [
+    {
+      from: 'فريق صحة تك',
+      title: 'مرحباً بك في نظام صحة تك!',
+      content: 'نحن سعداء بانضمامك إلى نظامنا. يمكنك الآن إدارة عيادتك بكل سهولة. لا تتردد في استكشاف جميع الميزات!',
+      read: false,
+    },
+     {
+      from: 'تحديثات النظام',
+      title: 'تم تفعيل ميزات جديدة!',
+      content: 'لقد قمنا بإضافة ميزة الدردشة الفورية وحالة المستخدمين. يمكنك الآن التواصل مع فريقك مباشرة من لوحة التحكم.',
+      read: true,
     }
+]
 
-    // 2. Add doctors
-    console.log('Adding doctors...');
-    const doctorRefs = [];
-    for (const doctor of doctors) {
-        const docRef = doc(collection(db, 'doctors'));
-        batch.set(docRef, doctor);
-        doctorRefs.push({ id: docRef.id, ...doctor });
-    }
-
-    // 3. Add patients
-    console.log('Adding patients...');
-    const patientRefs = [];
-    for (const patient of patients) {
-        const docRef = doc(collection(db, 'patients'));
-        batch.set(docRef, { ...patient, createdAt: new Date() });
-        patientRefs.push({ id: docRef.id, ...patient });
-    }
-    
-    // 4. Add appointments
-    console.log('Adding appointments...');
-    const appointments = [
-        { patient: patientRefs[0], doctor: doctorRefs[0], dateTime: new Date(2025, 6, 25, 10, 0), status: 'Scheduled' },
-        { patient: patientRefs[1], doctor: doctorRefs[1], dateTime: new Date(2025, 6, 25, 9, 30), status: 'Waiting' },
-        { patient: patientRefs[2], doctor: doctorRefs[0], dateTime: new Date(2025, 7, 1, 11, 0), status: 'Scheduled' },
-    ];
-    for (const appt of appointments) {
-        const docRef = doc(collection(db, 'appointments'));
-        batch.set(docRef, {
-            patientId: appt.patient.id,
-            patientName: appt.patient.name,
-            doctorId: appt.doctor.id,
-            doctorName: `د. ${appt.doctor.name}`,
-            doctorSpecialty: appt.doctor.specialty,
-            dateTime: appt.dateTime.toISOString(),
-            status: appt.status,
-        });
-    }
-
-    // 5. Add transactions
-    console.log('Adding transactions...');
-    const transactions = [
-        { patient: patientRefs[0], amount: 5000, service: 'كشفية باطنية', date: new Date(2025, 6, 20), status: 'Success' },
-        { patient: patientRefs[1], amount: 4500, service: 'كشفية أطفال', date: new Date(2025, 6, 21), status: 'Success' },
-    ];
-     for (const trans of transactions) {
-        const docRef = doc(collection(db, 'transactions'));
-        batch.set(docRef, {
-            patientId: trans.patient.id,
-            patientName: trans.patient.name,
-            amount: trans.amount,
-            service: trans.service,
-            date: trans.date,
-            status: trans.status,
-        });
-    }
-
-    // Commit the batch
-    await batch.commit();
-    console.log('Database seeded successfully!');
-
-  } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    process.exit(0);
-  }
-}
 
 async function clearCollection(collectionPath) {
-    console.log(`Clearing collection: ${collectionPath}`);
-    const q = query(collection(collectionPath));
-    const querySnapshot = await getDocs(q);
+  const collectionRef = collection(db, collectionPath);
+  const q = await getDocs(collectionRef);
+  const batch = writeBatch(db);
+  q.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+  console.log(`Collection "${collectionPath}" cleared.`);
+}
+
+async function seedCollection(collectionName, data) {
+  const batch = writeBatch(db);
+  const collectionRef = collection(db, collectionName);
+  const addedDocs = [];
+
+  data.forEach(item => {
+    const docRef = doc(collectionRef); // Automatically generate unique ID
+    if (collectionName === 'patients' || collectionName === 'users') {
+      item.createdAt = serverTimestamp();
+    }
+     if (collectionName === 'patients') {
+        item.avatarUrl = `https://placehold.co/40x40.png?text=${getPatientInitials(item.name)}`;
+    }
+    if (collectionName === 'transactions' || collectionName === 'inboxMessages') {
+        item.timestamp = serverTimestamp();
+    }
+     if (collectionName === 'transactions') {
+        item.date = serverTimestamp();
+    }
+    batch.set(docRef, item);
+    addedDocs.push({id: docRef.id, ...item});
+  });
+
+  await batch.commit();
+  console.log(`Seeded ${data.length} documents into ${collectionName}`);
+  return addedDocs;
+}
+
+async function seedUsers() {
+  const addedUsers = [];
+
+  for (const userData of users) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        userData.email,
+        userData.password
+      );
+      const user = userCredential.user;
+      console.log(`Created auth user: ${user.email}`);
+
+      const userDocData = {
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        createdAt: serverTimestamp(),
+        contacts: {} // Add empty contacts object
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), userDocData);
+      console.log(`Firestore document created for user: ${user.email}`);
+
+      addedUsers.push({id: user.uid, ...userDocData});
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        console.log(`User ${userData.email} already exists. Signing in to get UID.`);
+        const userCredential = await signInWithEmailAndPassword(auth, userData.email, userData.password);
+        const user = userCredential.user;
+         const userDocData = {
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          createdAt: serverTimestamp(),
+          contacts: {}
+        };
+        await setDoc(doc(db, 'users', user.uid), userDocData, { merge: true }); // Merge to avoid overwriting existing data
+        console.log(`Firestore document updated for user: ${user.email}`);
+        addedUsers.push({id: user.uid, ...userDocData});
+      } else {
+        console.error('Error creating user:', error);
+      }
+    }
+  }
+
+  // Set contacts
+  const allUsersQuery = await getDocs(collection(db, 'users'));
+  const allUsers = allUsersQuery.docs.map(d => ({ id: d.id, ...d.data()}));
+  
+  if (allUsers.length > 1) {
     const batch = writeBatch(db);
-    querySnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
+    allUsers.forEach(user => {
+        const userRef = doc(db, 'users', user.id);
+        const contacts = {};
+        allUsers.forEach(otherUser => {
+            if (user.id !== otherUser.id) {
+                contacts[otherUser.id] = true;
+            }
+        });
+        batch.update(userRef, { contacts });
     });
     await batch.commit();
-    console.log(`Collection ${collectionPath} cleared.`);
+    console.log("Contacts set for all users.");
+  }
+
+
+  return addedUsers;
 }
 
 
-async function clearAllData() {
-    // Note: This does not clear Auth users. That must be done manually.
-    const collections = ['users', 'doctors', 'patients', 'appointments', 'transactions', 'auditLogs', 'conversations'];
-    for (const col of collections) {
-        await clearCollection(collection(db, col));
+async function main() {
+  console.log('Starting database seed...');
+
+  // --- Clear existing data ---
+  await clearCollection('appointments');
+  await clearCollection('transactions');
+  await clearCollection('patients');
+  await clearCollection('doctors');
+  await clearCollection('inboxMessages');
+  
+  // Note: We don't clear users or auditLogs automatically to prevent data loss.
+  // We'll manage users individually.
+  
+  // --- Seed new data ---
+  const seededUsers = await seedUsers();
+  const seededDoctors = await seedCollection('doctors', doctors);
+  const seededPatients = await seedCollection('patients', patients);
+
+  // --- Seed linked data ---
+  if (seededPatients.length > 0 && seededDoctors.length > 0) {
+    const appointmentsToSeed = [
+      {
+        patientId: seededPatients[0].id,
+        patientName: seededPatients[0].name,
+        doctorId: seededDoctors[0].id,
+        doctorName: `د. ${seededDoctors[0].name}`,
+        doctorSpecialty: seededDoctors[0].specialty,
+        dateTime: new Date().toISOString(),
+        status: 'Waiting',
+      },
+      {
+        patientId: seededPatients[1].id,
+        patientName: seededPatients[1].name,
+        doctorId: seededDoctors[1].id,
+        doctorName: `د. ${seededDoctors[1].name}`,
+        doctorSpecialty: seededDoctors[1].specialty,
+        dateTime: new Date(new Date().getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+        status: 'Scheduled',
+      },
+       {
+        patientId: seededPatients[0].id,
+        patientName: seededPatients[0].name,
+        doctorId: seededDoctors[1].id,
+        doctorName: `د. ${seededDoctors[1].name}`,
+        doctorSpecialty: seededDoctors[1].specialty,
+        dateTime: new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
+        status: 'Completed',
+      },
+    ];
+    const seededAppointments = await seedCollection('appointments', appointmentsToSeed);
+
+    const completedAppointment = seededAppointments.find(a => a.status === 'Completed');
+    if (completedAppointment) {
+        const doctorForTransaction = seededDoctors.find(d => d.id === completedAppointment.doctorId);
+        if (doctorForTransaction && doctorForTransaction.servicePrice) {
+            const transactionsToSeed = [
+                {
+                    patientId: completedAppointment.patientId,
+                    patientName: completedAppointment.patientName,
+                    amount: doctorForTransaction.servicePrice,
+                    status: 'Success',
+                    service: `${doctorForTransaction.specialty} Consultation`,
+                }
+            ];
+            await seedCollection('transactions', transactionsToSeed);
+        }
     }
+  }
 
-     // Clear RTDB presence data
-    console.log('Clearing Realtime Database...');
-    const presenceRef = ref(rtdb, 'users');
-    await set(presenceRef, null);
-    console.log('Realtime Database cleared.');
+  // Seed Inbox Messages
+  if (seededUsers.length > 0) {
+      const adminUser = seededUsers.find(u => u.role === 'admin');
+      if (adminUser) {
+          const messagesWithFromId = inboxMessages.map(msg => ({...msg, fromId: adminUser.id}));
+          await seedCollection('inboxMessages', messagesWithFromId);
+      }
+  }
+
+
+  console.log('Database seeded successfully!');
+  // The script will exit automatically.
+  process.exit(0);
 }
 
-// Check command line arguments
-const args = process.argv.slice(2);
-if (args.includes('--clear')) {
-    clearAllData().then(() => seedDatabase());
-} else {
-    seedDatabase();
-}
+main().catch(error => {
+  console.error('Error seeding database:', error);
+  process.exit(1);
+});
+
