@@ -17,6 +17,7 @@ import {
   History,
   SlidersHorizontal,
   FileText,
+  Inbox,
 } from "lucide-react"
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -47,6 +48,7 @@ import { ChatTab } from "@/components/dashboard/chat-tab"
 import { AuditLogTab } from "@/components/dashboard/audit-log-tab"
 import { SettingsTab } from "@/components/dashboard/settings-tab"
 import { ReportsTab } from "@/components/dashboard/reports-tab"
+import { InboxTab } from "@/components/dashboard/inbox-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
@@ -56,7 +58,7 @@ import { AppointmentScheduler } from "@/components/appointment-scheduler"
 import { usePermissions } from "@/hooks/use-permissions"
 
 
-type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "settings" | "audit-log";
+type TabValue = "dashboard" | "appointments" | "doctors" | "patients" | "billing" | "chat" | "analytics" | "reports" | "settings" | "audit-log" | "inbox";
 
 
 export default function Dashboard() {
@@ -96,6 +98,7 @@ export default function Dashboard() {
 
   const navLinks = [
     { id: "dashboard", label: "الرئيسية", icon: Home, href: "/dashboard?tab=dashboard", permission: "viewDashboard" },
+    { id: "inbox", label: "البريد الوارد", icon: Inbox, badge: "3", href: "/dashboard?tab=inbox", permission: "useChat" },
     { id: "appointments", label: "المواعيد", icon: CalendarDays, badge: "6", href: "/dashboard?tab=appointments", permission: "viewAppointments" },
     { id: "doctors", label: "الأطباء", icon: Stethoscope, href: "/dashboard?tab=doctors", permission: "viewDoctors" },
     { id: "patients", label: "المرضى", icon: Users, href: "/dashboard?tab=patients", permission: "viewPatients" },
@@ -260,6 +263,9 @@ export default function Dashboard() {
           <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v)} className="w-full">
             <TabsContent value="dashboard">
               <Overview />
+            </TabsContent>
+            <TabsContent value="inbox">
+              <InboxTab />
             </TabsContent>
             <TabsContent value="appointments">
               <AppointmentsTab />

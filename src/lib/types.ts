@@ -64,6 +64,7 @@ export interface User {
   status?: 'online' | 'offline';
   createdAt?: any;
   presence?: UserPresence;
+  contacts?: { [userId: string]: boolean };
 }
 
 export interface UserPresence {
@@ -90,4 +91,14 @@ export interface AuditLog {
     details: Record<string, any>;
     section: string;
     timestamp: any; // To support Firestore serverTimestamp
+}
+
+export interface InboxMessage {
+  id: string;
+  from: string;
+  fromId: string;
+  title: string;
+  content: string;
+  timestamp: any;
+  read: boolean;
 }
