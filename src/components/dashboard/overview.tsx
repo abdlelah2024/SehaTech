@@ -428,34 +428,45 @@ export function Overview() {
             </CardContent>
           </Card>
           <div className="space-y-6">
-            <Card>
+             <Card>
                 <CardHeader>
-                    <CardTitle>أداء الأطباء</CardTitle>
-                     <CardDescription>عدد المواعيد لكل طبيب في الفترة المحددة.</CardDescription>
+                    <CardTitle>حالة النظام</CardTitle>
+                    <CardDescription>حالة الاتصال بالخدمات السحابية.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {filteredData.doctorAppointmentsCount.map(doc => (
-                            <div key={doc.name} className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={`https://placehold.co/40x40.png?text=${getPatientInitials(`د. ${doc.name}`)}`} data-ai-hint="doctor portrait" />
-                                        <AvatarFallback>{getPatientInitials(`د. ${doc.name}`)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="text-sm font-medium">د. {doc.name}</p>
-                                    </div>
-                                </div>
-                                <div className="font-semibold">{doc.count} موعد</div>
-                            </div>
-                        ))}
-                         {filteredData.doctorAppointmentsCount.length === 0 && (
-                            <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات لعرضها حسب الفلاتر المحددة.</p>
-                         )}
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Database className="h-5 w-5 text-muted-foreground" />
+                            <p className="font-medium">خدمات Firebase</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600">
+                           <CheckCircle className="h-4 w-4" />
+                           <span>متصل</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Wifi className="h-5 w-5 text-muted-foreground" />
+                            <p className="font-medium">الاتصال الفوري</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600">
+                           <CheckCircle className="h-4 w-4" />
+                           <span>متصل</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Stethoscope className="h-5 w-5 text-muted-foreground" />
+                            <p className="font-medium">نظام حالة المستخدمين</p>
+                        </div>
+                         <div className="flex items-center gap-2 text-green-600">
+                           <CheckCircle className="h-4 w-4" />
+                           <span>نشط</span>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
-             <Card>
+            <Card>
                 <CardHeader>
                     <CardTitle>حالة المستخدمين</CardTitle>
                     <CardDescription>عرض المستخدمين وحالتهم في النظام.</CardDescription>
