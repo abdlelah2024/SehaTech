@@ -1,7 +1,8 @@
 
+
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -25,41 +26,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { AuditLog, User, UserRole } from "@/lib/types"
+import type { AuditLog, User } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { Search, X } from "lucide-react"
 import { LocalizedDateTime } from "../localized-date-time"
-import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
 import { roleTranslations } from "@/lib/permissions"
 
-export function AuditLogTab() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [users, setUsers] = useState<{ [id: string]: User }>({});
+interface AuditLogTabProps {
+    logs: AuditLog[];
+    users: User[];
+}
+
+export function AuditLogTab({ logs, users: allUsers }: AuditLogTabProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterSection, setFilterSection] = useState<string>("all");
-  
-  useEffect(() => {
-    const usersUnsub = onSnapshot(collection(db, "users"), (snapshot) => {
-      const usersData = {};
-      snapshot.forEach(doc => {
-        usersData[doc.id] = { id: doc.id, ...doc.data() } as User;
-      });
-      setUsers(usersData);
-    });
 
-    const logsQuery = query(collection(db, "auditLogs"), orderBy("timestamp", "desc"));
-    const logsUnsub = onSnapshot(logsQuery, (snapshot) => {
-        setLogs(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as AuditLog));
+  const users = useMemo(() => {
+    const userMap: { [id: string]: User } = {};
+    allUsers.forEach(u => {
+        userMap[u.id] = u;
     });
-    
-    return () => {
-      usersUnsub();
-      logsUnsub();
-    };
-  }, []);
+    return userMap;
+  }, [allUsers]);
 
   const sections = useMemo(() => {
     const uniqueSections = new Set(logs.map(log => log.section));
@@ -74,8 +64,7 @@ export function AuditLogTab() {
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       const user = users[log.userId];
-      const matchesSearch = user && (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       log.action.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = user ? (user.name.toLowerCase().includes(searchTerm.toLowerCase()) || log.action.toLowerCase().includes(searchTerm.toLowerCase())) : log.action.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = filterRole === 'all' || (user && user.role === filterRole);
       const matchesSection = filterSection === 'كل الأقسام' || log.section === filterSection;
       return matchesSearch && matchesRole && matchesSection;
@@ -117,7 +106,7 @@ export function AuditLogTab() {
             </SelectTrigger>
             <SelectContent>
               {roles.map(role => (
-                <SelectItem key={role} value={role}>{role === 'all' ? 'كل الأدوار' : roleTranslations[role]}</SelectItem>
+                <SelectItem key={role} value={role}>{role === 'all' ? 'كل الأدوار' : roleTranslations[role as keyof typeof roleTranslations]}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -171,7 +160,7 @@ export function AuditLogTab() {
                     </TableCell>
                     <TableCell>
                         <div className="font-medium">{log.action}</div>
-                        <div className="text-xs text-muted-foreground">{JSON.stringify(log.details)}</div>
+                        <div className="text-xs text-muted-foreground" dir="ltr">{JSON.stringify(log.details)}</div>
                     </TableCell>
                     <TableCell>{log.section}</TableCell>
                     <TableCell>

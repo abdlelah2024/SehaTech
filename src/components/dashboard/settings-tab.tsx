@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -54,16 +55,19 @@ import {
 import type { User, UserRole } from "@/lib/types"
 import { Badge } from "../ui/badge"
 import { EditUserDialog } from "./edit-user-dialog"
-import { db, auth, rtdb } from "@/lib/firebase"
-import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
-import { ref, onValue } from "firebase/database"
+import { db, auth } from "@/lib/firebase"
+import { collection, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { permissions as allPermissions, permissionDetails, PermissionCategory, PermissionKey, roleTranslations } from "@/lib/permissions"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { logAuditEvent } from "@/lib/audit-log-service"
 
-export function SettingsTab() {
+interface SettingsTabProps {
+  users: User[];
+}
+
+export function SettingsTab({ users }: SettingsTabProps) {
   const { toast } = useToast()
 
   // Mock state for settings
@@ -73,7 +77,6 @@ export function SettingsTab() {
 
   // User Management State
   const [authUser] = useAuthState(auth);
-  const [users, setUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -91,15 +94,6 @@ export function SettingsTab() {
   useEffect(() => {
     setCurrentPermissions(allPermissions[selectedRole]);
   }, [selectedRole]);
-
-  useEffect(() => {
-    const unsubUsers = onSnapshot(query(collection(db, "users")), (snap) => {
-        const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
-        setUsers(firestoreUsers);
-    });
-
-    return () => unsubUsers();
-  }, []);
   
   const filteredUsers = useMemo(() => {
     return users.filter(user =>

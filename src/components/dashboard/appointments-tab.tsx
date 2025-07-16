@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -41,7 +42,7 @@ import { cn } from "@/lib/utils"
 import { LocalizedDateTime } from "../localized-date-time"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, doc, updateDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore"
+import { collection, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 import { logAuditEvent } from "@/lib/audit-log-service"
@@ -61,35 +62,18 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
     'Follow-up': 'followup'
 };
 
+interface AppointmentsTabProps {
+  appointments: Appointment[];
+  doctors: Doctor[];
+}
 
-export function AppointmentsTab({ }: {}) {
+export function AppointmentsTab({ appointments, doctors }: AppointmentsTabProps) {
   const [currentUser] = useAuthState(auth);
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [doctors, setDoctors] = useState<Doctor[]>([])
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
   const { toast } = useToast()
-
-  useEffect(() => {
-    const q = query(collection(db, "appointments"), orderBy("dateTime", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const appts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      setAppointments(appts);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, "doctors"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-      setDoctors(docs);
-    });
-    return () => unsubscribe();
-  }, []);
-
 
   const handleAppointmentCreated = async (newAppointmentData: Omit<Appointment, 'id' | 'status'>) => {
     if (!currentUser) return;
@@ -177,7 +161,7 @@ export function AppointmentsTab({ }: {}) {
       (filterStatus === 'all' || appointment.status === filterStatus) &&
       (filterDoctor === 'all' || appointment.doctorId === filterDoctor) &&
       (!filterDate || isSameDay(new Date(appointment.dateTime), filterDate))
-    );
+    ).sort((a,b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   }, [appointments, searchTerm, filterStatus, filterDoctor, filterDate]);
 
   return (

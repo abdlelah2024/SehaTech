@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -41,11 +42,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AppointmentScheduler } from "../appointment-scheduler"
 import { getPatientInitials } from "@/lib/utils"
 import { PatientDetails } from "../patient-details"
-import type { Patient } from "@/lib/types"
-import { EditPatientDialog } from "../edit-patient-dialog"
-import { UserPlus, Search, Edit, Trash2, X } from "lucide-react"
+import type { Patient, Appointment } from "@/lib/types"
+import { EditPatientDialog } from "./edit-patient-dialog"
+import { Search, Edit, Trash2, X } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { collection, onSnapshot, query, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { logAuditEvent } from "@/lib/audit-log-service"
 import { useAuthState } from "react-firebase-hooks/auth"
@@ -62,28 +63,19 @@ function calculateAge(dob: string): number {
   return age;
 }
 
-export function PatientsTab() {
+interface PatientsTabProps {
+  patients: Patient[];
+}
+
+export function PatientsTab({ patients }: PatientsTabProps) {
   const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGender, setFilterGender] = useState("all")
   const [selectedPatientForProfile, setSelectedPatientForProfile] = useState<Patient | null>(null)
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null)
-  const [patients, setPatients] = useState<Patient[]>([])
   const [appointmentsCount, setAppointmentsCount] = useState<{ [key: string]: number }>({})
   const { toast } = useToast();
   
-  useEffect(() => {
-    const q = query(collection(db, "patients"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const pats = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }) as Patient);
-      setPatients(pats);
-    });
-    return () => unsubscribe();
-  }, []);
-
   useEffect(() => {
     const q = query(collection(db, "appointments"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {

@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "node --env-file=.env scripts/seed-db.mjs"
+    "db:seed": "node scripts/seed-db.mjs"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.13.0",

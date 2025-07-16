@@ -1,5 +1,6 @@
 
 
+
 "use client"
 import { Users, CalendarPlus, Stethoscope, Activity, Wifi, Circle, Database, CheckCircle, XCircle, UserPlus, FileText, X } from "lucide-react"
 import {
@@ -46,10 +47,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar } from "../ui/calendar"
 import type { DateRange } from "react-day-picker"
 import { useToast } from "@/hooks/use-toast"
-import { db, rtdb } from "@/lib/firebase"
+import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
-import { ref, onValue } from "firebase/database"
 import { roleTranslations } from "@/lib/permissions"
+
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -87,57 +88,22 @@ const statusBadgeVariants: { [key: string]: "success" | "secondary" | "waiting" 
 
 const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
 
+interface OverviewProps {
+    appointments: Appointment[];
+    transactions: Transaction[];
+    patients: Patient[];
+    doctors: Doctor[];
+    users: User[];
+}
 
-export function Overview() {
-  const [appointmentsState, setAppointmentsState] = useState<Appointment[]>([]);
-  const [transactionsState, setTransactionsState] = useState<Transaction[]>([]);
-  const [patientsState, setPatientsState] = useState<Patient[]>([]);
-  const [doctorsState, setDoctorsState] = useState<Doctor[]>([]);
-  const [usersState, setUsersState] = useState<User[]>([]);
-
+export function Overview({ appointments, transactions, patients, doctors, users }: OverviewProps) {
   const [filterDoctor, setFilterDoctor] = useState<string>("all");
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const unsubAppointments = onSnapshot(query(collection(db, "appointments")), snap => setAppointmentsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Appointment)));
-    const unsubTransactions = onSnapshot(query(collection(db, "transactions")), snap => setTransactionsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Transaction)));
-    const unsubPatients = onSnapshot(query(collection(db, "patients")), snap => setPatientsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Patient)));
-    const unsubDoctors = onSnapshot(query(collection(db, "doctors")), snap => setDoctorsState(snap.docs.map(d => ({id: d.id, ...d.data()}) as Doctor)));
-    
-    // Combine Firestore user data with Realtime Database presence data
-    const unsubUsers = onSnapshot(query(collection(db, "users")), (snap) => {
-        const firestoreUsers = snap.docs.map(d => ({id: d.id, ...d.data()}) as User);
-
-        const presenceRef = ref(rtdb, 'users');
-        const unsubPresence = onValue(presenceRef, (snapshot) => {
-            const presenceData = snapshot.val();
-            if (presenceData) {
-              const combinedUsers = firestoreUsers.map(user => ({
-                  ...user,
-                  presence: presenceData?.[user.id]
-              }));
-              setUsersState(combinedUsers);
-            } else {
-              setUsersState(firestoreUsers);
-            }
-        });
-
-        return () => unsubPresence();
-    });
-
-    return () => {
-      unsubAppointments();
-      unsubTransactions();
-      unsubPatients();
-      unsubDoctors();
-      unsubUsers();
-    }
-  }, []);
-
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
     const appointmentRef = doc(db, "appointments", appointmentId);
-    const appointment = appointmentsState.find(a => a.id === appointmentId);
+    const appointment = appointments.find(a => a.id === appointmentId);
     
     if (!appointment) {
         toast({ variant: "destructive", title: "خطأ", description: "لم يتم العثور على الموعد." });
@@ -150,7 +116,7 @@ export function Overview() {
         let toastDescription = `تم تحديث حالة الموعد إلى "${statusTranslations[newStatus]}".`;
 
         if (newStatus === 'Completed') {
-            const doctor = doctorsState.find(d => d.id === appointment.doctorId);
+            const doctor = doctors.find(d => d.id === appointment.doctorId);
             if (doctor && doctor.servicePrice) {
                 await addDoc(collection(db, "transactions"), {
                     patientId: appointment.patientId,
@@ -187,16 +153,16 @@ export function Overview() {
       ? { start: startOfDay(filterDateRange.from), end: endOfDay(filterDateRange.to) }
       : { start: startOfDay(today), end: endOfDay(today) };
 
-    const appointments = appointmentsState.filter(appointment => {
+    const filteredAppointments = appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.dateTime);
       const inDateRange = isWithinInterval(appointmentDate, interval);
       const matchesDoctor = filterDoctor === 'all' || appointment.doctorId === filterDoctor;
       return inDateRange && matchesDoctor;
     });
 
-    const patientIdsFromFilteredAppointments = [...new Set(appointments.map(a => a.patientId))];
+    const patientIdsFromFilteredAppointments = [...new Set(filteredAppointments.map(a => a.patientId))];
 
-    const transactions = transactionsState.filter(transaction => {
+    const filteredTransactions = transactions.filter(transaction => {
       if (!transaction.date) return false;
       const transactionDate = typeof transaction.date.toDate === 'function' ? transaction.date.toDate() : new Date(transaction.date);
       const inDateRange = isWithinInterval(transactionDate, interval);
@@ -206,40 +172,40 @@ export function Overview() {
       return inDateRange && matchesDoctor;
     });
     
-    const newPatientsInPeriod = patientsState.filter(patient => {
+    const newPatientsInPeriod = patients.filter(patient => {
         if (!patient.createdAt) return false;
         const creationDate = typeof patient.createdAt.toDate === 'function' ? patient.createdAt.toDate() : new Date(patient.createdAt);
         return isWithinInterval(creationDate, interval);
     });
 
-    const activeDoctorsInPeriod = doctorsState.filter(doctor => {
-        return appointments.some(a => a.doctorId === doctor.id);
+    const activeDoctorsInPeriod = doctors.filter(doctor => {
+        return filteredAppointments.some(a => a.doctorId === doctor.id);
     });
 
-    const doctorAppointmentsCount = doctorsState.map(doctor => {
-        const count = appointments.filter(a => a.doctorId === doctor.id).length;
+    const doctorAppointmentsCount = doctors.map(doctor => {
+        const count = filteredAppointments.filter(a => a.doctorId === doctor.id).length;
         return { name: doctor.name, count };
     }).sort((a, b) => b.count - a.count).filter(d => d.count > 0);
 
 
-    const totalRevenue = transactions
+    const totalRevenue = filteredTransactions
       .filter(t => t.status === 'Success')
       .reduce((sum, t) => sum + t.amount, 0);
 
     return { 
-      appointments, 
+      appointments: filteredAppointments, 
       totalRevenue, 
       newPatientsCount: newPatientsInPeriod.length,
       activeDoctorsCount: activeDoctorsInPeriod.length,
       doctorAppointmentsCount
     };
-  }, [filterDoctor, filterDateRange, appointmentsState, transactionsState, patientsState, doctorsState]);
+  }, [filterDoctor, filterDateRange, appointments, transactions, patients, doctors]);
 
   const appointmentsToday = useMemo(() => {
-    return appointmentsState
+    return appointments
         .filter(a => isToday(new Date(a.dateTime)))
         .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
-  }, [appointmentsState]);
+  }, [appointments]);
   
   const handleClearFilters = () => {
     setFilterDoctor("all");
@@ -260,7 +226,7 @@ export function Overview() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">كل الأطباء</SelectItem>
-                    {doctorsState.map(doctor => (
+                    {doctors.map(doctor => (
                     <SelectItem key={doctor.id} value={doctor.id}>د. {doctor.name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -352,7 +318,7 @@ export function Overview() {
             <Stethoscope className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{filteredData.activeDoctorsCount > 0 ? filteredData.activeDoctorsCount : doctorsState.length}</div>
+            <div className="text-2xl font-bold">+{filteredData.activeDoctorsCount > 0 ? filteredData.activeDoctorsCount : doctors.length}</div>
              <p className="text-xs text-muted-foreground">
                {filterDateRange || filterDoctor !== 'all' ? 'أطباء نشطون في الفترة المحددة' : 'إجمالي الأطباء في النظام'}
             </p>
@@ -476,7 +442,7 @@ export function Overview() {
                     <CardDescription>عرض المستخدمين وحالتهم في النظام.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                    {usersState.map(user => (
+                    {users.map(user => (
                          <div key={user.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-9 w-9">
@@ -503,7 +469,7 @@ export function Overview() {
                             )}
                         </div>
                     ))}
-                    {usersState.length === 0 && (
+                    {users.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">لا يوجد مستخدمون لعرضهم.</p>
                     )}
                 </CardContent>

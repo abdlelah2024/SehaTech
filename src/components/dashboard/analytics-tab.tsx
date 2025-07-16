@@ -1,5 +1,6 @@
 
 
+
 "use client"
 
 import {
@@ -19,9 +20,7 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import type { ChartConfig } from "@/components/ui/chart"
 import type { Appointment } from "@/lib/types"
-import { useMemo, useState, useEffect } from "react"
-import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query } from "firebase/firestore"
+import { useMemo } from "react"
 
 const chartConfig = {
   appointments: {
@@ -30,18 +29,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function AnalyticsTab() {
-  const [appointments, setAppointments] = useState<Appointment[]>([])
+interface AnalyticsTabProps {
+  appointments: Appointment[];
+}
 
-  useEffect(() => {
-    const q = query(collection(db, "appointments"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const appts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      setAppointments(appts);
-    });
-    return () => unsubscribe();
-  }, []);
-
+export function AnalyticsTab({ appointments }: AnalyticsTabProps) {
   const chartData = useMemo(() => {
     const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const monthlyCounts = monthNames.map(month => ({ month, appointments: 0 }));

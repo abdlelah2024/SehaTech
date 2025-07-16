@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -42,10 +43,13 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { logAuditEvent } from "@/lib/audit-log-service";
 
-export function BillingTab({ }: {}) {
+interface BillingTabProps {
+  transactions: Transaction[];
+  patients: Patient[];
+}
+
+export function BillingTab({ transactions, patients }: BillingTabProps) {
   const [currentUser] = useAuthState(auth);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
@@ -54,24 +58,6 @@ export function BillingTab({ }: {}) {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
   
-  useEffect(() => {
-    const q = query(collection(db, "transactions"), orderBy("date", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const trans = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-      setTransactions(trans);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, "patients"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const pats = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
-      setPatients(pats);
-    });
-    return () => unsubscribe();
-  }, []);
-
   const handleRecordTransaction = async () => {
     if (!selectedPatientId || !amount || !service || !currentUser) {
       toast({
@@ -151,11 +137,13 @@ export function BillingTab({ }: {}) {
   };
 
   const filteredTransactions = useMemo(() => {
-    if (!searchTerm) return transactions;
-    return transactions.filter(transaction =>
-      transaction.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return transactions
+      .filter(transaction =>
+        !searchTerm ||
+        transaction.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => b.date?.toDate() - a.date?.toDate());
   }, [transactions, searchTerm]);
   
   const resetDialog = useCallback(() => {

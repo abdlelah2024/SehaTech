@@ -1,5 +1,6 @@
 
 
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -52,7 +53,7 @@ import { InboxTab } from "@/components/dashboard/inbox-tab"
 import { cn } from "@/lib/utils"
 import { useSearchParams } from 'next/navigation'
 import { GlobalSearch } from "@/components/dashboard/global-search"
-import type { Patient, UserRole } from "@/lib/types"
+import type { Patient, User, UserRole, Doctor, Appointment, Transaction, AuditLog } from "@/lib/types"
 import { PatientDetails } from "@/components/patient-details"
 import { AppointmentScheduler } from "@/components/appointment-scheduler"
 import { usePermissions } from "@/hooks/use-permissions"
@@ -70,23 +71,60 @@ export default function Dashboard() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('receptionist'); 
   const permissions = usePermissions(currentUserRole);
 
+  const [allData, setAllData] = useState<{
+    patients: Patient[];
+    doctors: Doctor[];
+    appointments: Appointment[];
+    transactions: Transaction[];
+    users: User[];
+    auditLogs: AuditLog[];
+  }>({
+    patients: [],
+    doctors: [],
+    appointments: [],
+    transactions: [],
+    users: [],
+    auditLogs: [],
+  });
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       if (authUser) {
         setUser(authUser);
         const userDocRef = doc(db, "users", authUser.uid);
-        const unsubUser = onSnapshot(userDocRef, (doc) => {
+        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
-            setCurrentUserRole(doc.data().role);
+            setCurrentUserRole(doc.data().role as UserRole);
           }
         });
-        return () => unsubUser();
+        return () => unsubscribeUser();
       } else {
         router.push('/');
       }
     });
+    
+    const unsubPatients = onSnapshot(doc(db, "users", "admin"), (snapshot) => {
+        // Dummy listener to keep connection alive if needed, or replace with real listeners
+    });
 
-    return () => unsubscribe();
+    const unsubAppointments = onSnapshot(collection(db, "appointments"), snap => setAllData(prev => ({...prev, appointments: snap.docs.map(d => ({id: d.id, ...d.data()}) as Appointment)})));
+    const unsubPatientsColl = onSnapshot(collection(db, "patients"), snap => setAllData(prev => ({...prev, patients: snap.docs.map(d => ({id: d.id, ...d.data()}) as Patient)})));
+    const unsubDoctors = onSnapshot(collection(db, "doctors"), snap => setAllData(prev => ({...prev, doctors: snap.docs.map(d => ({id: d.id, ...d.data()}) as Doctor)})));
+    const unsubTransactions = onSnapshot(collection(db, "transactions"), snap => setAllData(prev => ({...prev, transactions: snap.docs.map(d => ({id: d.id, ...d.data()}) as Transaction)})));
+    const unsubUsers = onSnapshot(collection(db, "users"), snap => setAllData(prev => ({...prev, users: snap.docs.map(d => ({id: d.id, ...d.data()}) as User)})));
+    const unsubAuditLogs = onSnapshot(collection(db, "auditLogs"), snap => setAllData(prev => ({...prev, auditLogs: snap.docs.map(d => ({id: d.id, ...d.data()}) as AuditLog)})));
+
+
+    return () => {
+      unsubscribeAuth();
+      unsubPatients();
+      unsubAppointments();
+      unsubPatientsColl();
+      unsubDoctors();
+      unsubTransactions();
+      unsubUsers();
+      unsubAuditLogs();
+    };
   }, [router]);
 
 
@@ -230,6 +268,7 @@ export default function Dashboard() {
           </Sheet>
           <div className="w-full flex-1">
              <GlobalSearch 
+                patients={allData.patients}
                 onViewProfile={setSelectedPatientForProfile}
                 onNewAppointment={(patient) => {
                   setSelectedPatientForAppointment(patient);
@@ -262,37 +301,43 @@ export default function Dashboard() {
           </div>
           <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v)} className="w-full">
             <TabsContent value="dashboard">
-              <Overview />
+              <Overview 
+                appointments={allData.appointments}
+                transactions={allData.transactions}
+                patients={allData.patients}
+                doctors={allData.doctors}
+                users={allData.users}
+              />
             </TabsContent>
             <TabsContent value="inbox">
               <InboxTab />
             </TabsContent>
             <TabsContent value="appointments">
-              <AppointmentsTab />
+              <AppointmentsTab appointments={allData.appointments} doctors={allData.doctors} />
             </TabsContent>
             <TabsContent value="doctors">
-              <DoctorsTab />
+              <DoctorsTab doctors={allData.doctors}/>
             </TabsContent>
             <TabsContent value="patients">
-              <PatientsTab />
+              <PatientsTab patients={allData.patients} />
             </TabsContent>
             <TabsContent value="billing">
-              <BillingTab />
+              <BillingTab transactions={allData.transactions} patients={allData.patients} />
             </TabsContent>
              <TabsContent value="chat">
               <ChatTab />
             </TabsContent>
             <TabsContent value="analytics">
-              <AnalyticsTab />
+              <AnalyticsTab appointments={allData.appointments}/>
             </TabsContent>
             <TabsContent value="reports">
               <ReportsTab />
             </TabsContent>
             <TabsContent value="settings">
-              <SettingsTab />
+              <SettingsTab users={allData.users} />
             </TabsContent>
             <TabsContent value="audit-log">
-              <AuditLogTab />
+              <AuditLogTab logs={allData.auditLogs} users={allData.users} />
             </TabsContent>
           </Tabs>
         </main>

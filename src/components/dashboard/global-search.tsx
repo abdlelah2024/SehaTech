@@ -1,24 +1,26 @@
 
 
+
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, CalendarPlus, User } from "lucide-react";
+import { Search, UserPlus, CalendarPlus, User as UserIcon } from "lucide-react";
 import type { Patient } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { AppointmentScheduler } from '../appointment-scheduler';
 import { useDebounce } from '@/hooks/use-debounce';
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from '@/hooks/use-toast';
 
 interface GlobalSearchProps {
+  patients: Patient[];
   onViewProfile: (patient: Patient) => void;
   onNewAppointment: (patient: Patient) => void;
 }
 
-export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchProps) {
+export function GlobalSearch({ patients, onViewProfile, onNewAppointment }: GlobalSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
@@ -33,21 +35,13 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
         return;
     }
     
-    // As Firestore doesn't support native text search on parts of a string efficiently on the client-side
-    // without a third-party service like Algolia, we'll fetch all patients and filter locally.
-    // This is not ideal for very large datasets.
-    const q = query(collection(db, "patients"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const patients = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Patient);
-        const filtered = patients.filter(patient => 
-            patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-            (patient.phone && patient.phone.includes(debouncedSearchTerm))
-        ).slice(0, 5);
-        setSearchResults(filtered);
-    });
+    const filtered = patients.filter(patient => 
+        patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (patient.phone && patient.phone.includes(debouncedSearchTerm))
+    ).slice(0, 5);
+    setSearchResults(filtered);
 
-    return unsubscribe;
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, patients]);
 
 
   useEffect(() => {
@@ -121,7 +115,7 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
                         موعد
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => { onViewProfile(patient); setIsFocused(false); setSearchTerm(''); }}>
-                         <User className="h-4 w-4 ml-1" />
+                         <UserIcon className="h-4 w-4 ml-1" />
                          ملف
                       </Button>
                     </div>
@@ -151,7 +145,6 @@ export function GlobalSearch({ onViewProfile, onNewAppointment }: GlobalSearchPr
             context="new-patient" 
             onPatientCreated={handlePatientCreated}
             prefilledData={getPrefilledData()}
-            
          />
       )}
     </div>

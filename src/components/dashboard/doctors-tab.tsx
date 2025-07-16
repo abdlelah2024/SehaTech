@@ -1,7 +1,8 @@
 
+
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -38,27 +39,21 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import type { Doctor } from "@/lib/types"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 import { logAuditEvent } from "@/lib/audit-log-service"
 
-export function DoctorsTab() {
+interface DoctorsTabProps {
+  doctors: Doctor[];
+}
+
+export function DoctorsTab({ doctors }: DoctorsTabProps) {
   const [currentUser] = useAuthState(auth);
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const q = query(collection(db, "doctors"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-      setDoctors(docs);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const specialties = useMemo(() => [...new Set(doctors.map((d) => d.specialty))], [doctors]);
 
