@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast"
 import { db, rtdb } from "@/lib/firebase"
 import { collection, onSnapshot, query, doc, updateDoc, where, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
 import { ref, onValue } from "firebase/database"
+import { roleTranslations } from "@/lib/permissions"
 
 function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -497,3 +498,4 @@ export function Overview() {
     </div>
   )
 }
+
