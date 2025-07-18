@@ -1,11 +1,19 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
-
 runConfig:
   minInstances: 0
   maxInstances: 2
-
 # Automatic rollout of new code is enabled by default.
 # To disable it, uncomment the following lines.
 # managedRollouts:
 #   enabled: false
+backend:
+  # The Firebase services that your App Hosting backend needs to connect to
+  # before it can start serving traffic.
+  # https://firebase.google.com/docs/app-hosting/configure#connect-to-services
+  serviceConnections:
+    - serviceId: firebase
+      # Set this to the project ID of the Firebase project that you're connecting to.
+      # If you don't specify a project ID, App Hosting connects to services
+      # in the same project.
+      projectId: peppy-strategy-685
