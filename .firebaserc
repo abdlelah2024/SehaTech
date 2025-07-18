@@ -1,5 +1,5 @@
 {
   "projects": {
-    "default": "next-js-saas-template"
+    "default": "YOUR_FIREBASE_PROJECT_ID"
   }
 }
