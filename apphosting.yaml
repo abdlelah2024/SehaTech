@@ -4,4 +4,10 @@
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
-  maxInstances: 1
+  minInstances: 0
+  maxInstances: 2
+
+# Automatic rollout of new code is enabled by default.
+# To disable it, uncomment the following lines.
+# managedRollouts:
+#   enabled: false
