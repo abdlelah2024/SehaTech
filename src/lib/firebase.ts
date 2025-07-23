@@ -5,14 +5,14 @@ import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC2oCiZp9TTeF30GvaYu3fwpV0iLf8PfLY",
-  authDomain: "peppy-strategy-685.firebaseapp.com",
-  projectId: "peppy-strategy-685",
-  storageBucket: "peppy-strategy-685.appspot.com",
-  messagingSenderId: "978780666051",
-  appId: "1:978780666051:web:0e547933d89f8bc0570a76",
-  measurementId: "G-WY5B4QWGHL",
-  databaseURL: "https://peppy-strategy-685-default-rtdb.firebaseio.com",
+  apiKey: "AIzaSyB-4g5913dw5FLShdW-pDXdjIHC1qHz-W4",
+  authDomain: "sehatech-519pg.firebaseapp.com",
+  databaseURL: "https://sehatech-519pg-default-rtdb.firebaseio.com",
+  projectId: "sehatech-519pg",
+  storageBucket: "sehatech-519pg.appspot.com",
+  messagingSenderId: "289549478988",
+  appId: "1:289549478988:web:be08211a23c1706bee58e9",
+  measurementId: "G-WY5B4QWGHL"
 };
 
 // Initialize Firebase

@@ -1,258 +1,250 @@
+/**
+ * @fileoverview Seeds the Firestore database with initial data.
+ *
+ * This script is intended to be run from the command line, e.g., `node scripts/seed-db.mjs`.
+ * It requires a service account key file (`serviceAccountKey.json`) in the same directory
+ * to authenticate with Firebase Admin.
+ *
+ * It performs the following actions:
+ * 1. Initializes the Firebase Admin SDK.
+ * 2. Deletes all existing data from specified collections to ensure a clean slate.
+ * 3. Creates new user records in Firebase Authentication.
+ * 4. Creates corresponding user documents in the 'users' collection in Firestore.
+ * 5. Seeds the 'doctors', 'patients', 'appointments', 'transactions', and 'inboxMessages' collections with sample data.
+ */
+import admin from 'firebase-admin';
+import { readFile } from 'fs/promises';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { fakerAR as faker } from '@faker-js/faker';
 
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, writeBatch, Timestamp } from 'firebase/firestore';
-import { getDatabase, ref, set } from 'firebase/database';
+// --- Configuration ---
+// IMPORTANT: Place your Firebase service account key file in the same directory and name it `serviceAccountKey.json`.
+const SERVICE_ACCOUNT_PATH = new URL('./serviceAccountKey.json', import.meta.url);
 
-// IMPORTANT: Load environment variables from .env file
-import { config } from 'dotenv';
-config({ path: './.env' });
-
-
-const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const rtdb = getDatabase(app);
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function getRandomElement(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
+async function initializeFirebase() {
+  try {
+    const serviceAccount = JSON.parse(await readFile(SERVICE_ACCOUNT_PATH, 'utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: `https://sehatech-519pg-default-rtdb.firebaseio.com`,
+    });
+    console.log('Firebase Admin SDK initialized successfully.');
+    return {
+      db: getFirestore(),
+      auth: getAuth(),
+    };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.error(
+        'Error: `serviceAccountKey.json` not found.'
+      );
+      console.error(
+        `Please download it from your Firebase project settings (Project settings > Service accounts > Generate new private key) and place it at: ${SERVICE_ACCOUNT_PATH}`
+      );
+    } else {
+      console.error('Error initializing Firebase Admin SDK:', error);
+    }
+    process.exit(1);
+  }
 }
 
-function getRandomDate(start, end) {
-    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+async function deleteCollection(db, collectionPath, batchSize = 100) {
+    const collectionRef = db.collection(collectionPath);
+    const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(db, query, resolve).catch(reject);
+    });
 }
 
-const getPatientInitials = (name) => {
-    if(!name) return "";
-    const names = name.split(" ")
-    return names.length > 1
-      ? `${names[0][0]}${names[names.length - 1][0]}`
-      : names[0]?.[0] || ""
+async function deleteQueryBatch(db, query, resolve) {
+    const snapshot = await query.get();
+
+    if (snapshot.size === 0) {
+        return resolve();
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    process.nextTick(() => {
+        deleteQueryBatch(db, query, resolve);
+    });
 }
 
-// =============================================================================
-// Seed Data
-// =============================================================================
 
-const users = [
-    { email: 'abdlelah2013@gmail.com', password: '123456', name: 'عبدالإله القدسي', role: 'admin' },
-    { email: 'receptionist@sahatech.com', password: '123456', name: 'فاطمة الزهراء', role: 'receptionist' },
-    { email: 'doctor@sahatech.com', password: '123456', name: 'أحمد ياسين', role: 'doctor' },
-];
+async function clearAllData(db, auth) {
+    console.log('Starting data cleanup...');
 
-const doctors = [
-    {
-        name: "علي الأحمد",
-        specialty: "أمراض القلب",
-        image: `https://placehold.co/100x100.png?text=A`,
-        data_ai_hint: "doctor portrait",
-        nextAvailable: 'غداً، 10:00 ص',
-        isAvailableToday: true,
-        servicePrice: 7000,
-        freeReturnDays: 10,
-        availableDays: ['الأحد', 'الثلاثاء', 'الخميس'],
-        availability: [
-            { date: '2024-07-28', slots: ['10:00', '10:30', '11:00', '14:00', '14:30'] },
-            { date: '2024-07-30', slots: ['10:00', '10:30', '11:00', '14:00', '14:30'] }
-        ]
-    },
-    {
-        name: "سارة محمود",
-        specialty: "الأمراض الجلدية",
-        image: `https://placehold.co/100x100.png?text=S`,
-        data_ai_hint: "doctor portrait",
-        nextAvailable: 'اليوم، 4:00 م',
-        isAvailableToday: true,
-        servicePrice: 5000,
-        freeReturnDays: 14,
-        availableDays: ['السبت', 'الاثنين', 'الأربعاء'],
-        availability: [
-            { date: '2024-07-27', slots: ['16:00', '16:30', '17:00'] },
-            { date: '2024-07-29', slots: ['16:00', '16:30', '17:00'] }
-        ]
-    },
-    {
-        name: "خالد عبد الله",
-        specialty: "طب الأطفال",
-        image: `https://placehold.co/100x100.png?text=K`,
-        data_ai_hint: "doctor portrait",
-        nextAvailable: 'بعد 3 أيام',
-        isAvailableToday: false,
-        servicePrice: 4000,
-        freeReturnDays: 7,
-        availableDays: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
-        availability: [
-           { date: '2024-07-31', slots: ['09:00', '09:30', '10:00', '11:00'] }
-        ]
-    },
-];
+    const collections = ['users', 'doctors', 'patients', 'appointments', 'transactions', 'auditLogs', 'inboxMessages', 'conversations'];
+    for (const collection of collections) {
+        console.log(`Deleting collection: ${collection}...`);
+        await deleteCollection(db, collection);
+    }
+    
+    console.log('Deleting all Firebase Auth users...');
+    const listUsersResult = await auth.listUsers(1000);
+    const uidsToDelete = listUsersResult.users.map(u => u.uid);
+    if (uidsToDelete.length > 0) {
+        await auth.deleteUsers(uidsToDelete);
+        console.log(`Successfully deleted ${uidsToDelete.length} users.`);
+    } else {
+        console.log('No auth users to delete.');
+    }
 
-const patients = [
-    { name: "محمد قائد", dob: "1985-05-20", gender: "ذكر", phone: "777123456", address: "صنعاء، شارع حده" },
-    { name: "نورة صالح", dob: "1992-11-10", gender: "أنثى", phone: "777234567", address: "صنعاء، شارع الزبيري" },
-    { name: "أحمد عبدالكريم", dob: "2018-01-15", gender: "ذكر", phone: "777345678", address: "صنعاء، شارع تعز" },
-    { name: "فاطمة علي", dob: "1970-03-30", gender: "أنثى", phone: "777456789", address: "صنعاء، الدائري" },
-];
+    console.log('Cleanup complete.');
+}
 
-async function seed() {
-    console.log("Starting database seeding...");
 
-    // 1. Seed Authentication and Users Collection
-    console.log("Seeding users...");
-    const userIds = {};
-    for (const user of users) {
+async function seedDatabase(db, auth) {
+    console.log('Starting database seeding...');
+    
+    // 1. Create Users in Auth and Firestore
+    const usersData = [
+        { email: 'abdlelah2013@gmail.com', password: '123456', name: 'عبدالإله القدسي', role: 'admin' },
+        { email: 'reception@sehatech.com', password: '123456', name: 'موظف استقبال', role: 'receptionist' },
+        { email: 'doctor@sehatech.com', password: '123456', name: 'طبيب عام', role: 'doctor' },
+    ];
+    
+    const users = {};
+    for (const userData of usersData) {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
-            const uid = userCredential.user.uid;
-            userIds[user.role] = uid;
-            
-            // Add user to Firestore 'users' collection
-            await setDoc(doc(db, 'users', uid), {
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                createdAt: serverTimestamp()
+            const userRecord = await auth.createUser({
+                email: userData.email,
+                password: userData.password,
+                displayName: userData.name,
             });
-             console.log(`Successfully created user: ${user.email}`);
+            users[userData.role] = { id: userRecord.uid, ...userData };
+            
+            const userDocRef = db.collection('users').doc(userRecord.uid);
+            await userDocRef.set({
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            console.log(`Created user: ${userData.name} (${userData.role})`);
         } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                console.log(`User ${user.email} already exists. Signing in to get UID.`);
-                const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
-                const uid = userCredential.user.uid;
-                userIds[user.role] = uid;
-                await setDoc(doc(db, 'users', uid), { name: user.name, email: user.email, role: user.role }, { merge: true });
+            if (error.code === 'auth/email-already-exists') {
+                 console.warn(`User with email ${userData.email} already exists. Skipping Auth creation.`);
+                 const userRecord = await auth.getUserByEmail(userData.email);
+                 users[userData.role] = { id: userRecord.uid, ...userData };
             } else {
-                console.error(`Error creating user ${user.email}:`, error);
+                throw error;
             }
         }
     }
-    
-    // Add contacts to users
-     const adminId = userIds['admin'];
-     const receptionistId = userIds['receptionist'];
-     const doctorId = userIds['doctor'];
+     // Setup contacts
+    const adminId = users.admin.id;
+    const receptionistId = users.receptionist.id;
+    const doctorId = users.doctor.id;
 
-     if(adminId && receptionistId && doctorId) {
-        await setDoc(doc(db, 'users', adminId), { contacts: { [receptionistId]: true, [doctorId]: true } }, { merge: true });
-        await setDoc(doc(db, 'users', receptionistId), { contacts: { [adminId]: true, [doctorId]: true } }, { merge: true });
-        await setDoc(doc(db, 'users', doctorId), { contacts: { [adminId]: true, [receptionistId]: true } }, { merge: true });
-        console.log("Contacts seeded.");
-     }
-
-
-    const batch = writeBatch(db);
+    await db.collection('users').doc(adminId).set({ contacts: { [receptionistId]: true, [doctorId]: true } }, { merge: true });
+    await db.collection('users').doc(receptionistId).set({ contacts: { [adminId]: true, [doctorId]: true } }, { merge: true });
+    await db.collection('users').doc(doctorId).set({ contacts: { [adminId]: true, [receptionistId]: true } }, { merge: true });
 
     // 2. Seed Doctors
-    console.log("Seeding doctors...");
-    const doctorRefs = {};
-    for (const doctor of doctors) {
-        const docRef = doc(collection(db, "doctors"));
-        doctorRefs[doctor.name] = { id: docRef.id, ...doctor };
-        batch.set(docRef, doctor);
-    }
+    const doctors = [
+        { name: 'علي الأحمد', specialty: 'أمراض القلب', servicePrice: 7000, freeReturnDays: 14, availableDays: ['الأحد', 'الثلاثاء', 'الخميس'] },
+        { name: 'فاطمة الزهراء', specialty: 'الأطفال', servicePrice: 5000, freeReturnDays: 10, availableDays: ['السبت', 'الاثنين', 'الأربعاء'] },
+        { name: 'خالد المصري', specialty: 'الجلدية', servicePrice: 6000, freeReturnDays: 7, availableDays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] },
+    ];
 
+    const doctorIds = [];
+    for (const docData of doctors) {
+        const docRef = await db.collection('doctors').add({
+            ...docData,
+            image: `https://placehold.co/100x100.png?text=${docData.name.charAt(0)}`,
+            nextAvailable: 'غداً، 10:00 ص',
+            isAvailableToday: Math.random() > 0.5,
+            availability: [
+                { date: '2024-08-01', slots: ['10:00', '11:00', '14:00'] },
+                { date: '2024-08-02', slots: ['09:00', '10:00', '11:00', '12:00'] }
+            ]
+        });
+        doctorIds.push({ id: docRef.id, ...docData });
+        console.log(`Created doctor: ${docData.name}`);
+    }
+    
     // 3. Seed Patients
-    console.log("Seeding patients...");
-    const patientRefs = {};
-    for (const patient of patients) {
-        const docRef = doc(collection(db, "patients"));
-        const avatarUrl = `https://placehold.co/40x40.png?text=${getPatientInitials(patient.name)}`;
-        patientRefs[patient.name] = { id: docRef.id, ...patient, avatarUrl };
-        batch.set(docRef, { ...patient, avatarUrl, createdAt: serverTimestamp() });
-    }
-    
-    // Commit batch for doctors and patients
-    await batch.commit();
-    console.log("Doctors and Patients committed.");
-    
-    const newBatch = writeBatch(db);
-
-    // 4. Seed Appointments and Transactions
-    console.log("Seeding appointments and transactions...");
-    const appointmentStatuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
-    const doctorValues = Object.values(doctorRefs);
-    const patientValues = Object.values(patientRefs);
-
+    const patients = [];
     for (let i = 0; i < 15; i++) {
-        const patient = getRandomElement(patientValues);
-        const doctor = getRandomElement(doctorValues);
-        const status = getRandomElement(appointmentStatuses);
-        const appointmentDate = getRandomDate(new Date(2024, 5, 1), new Date());
-        
-        const appointmentRef = doc(collection(db, "appointments"));
-        newBatch.set(appointmentRef, {
+        const name = faker.person.fullName();
+        const patientData = {
+            name: name,
+            dob: faker.date.birthdate({ min: 18, max: 80, mode: 'age' }).toISOString().split('T')[0],
+            gender: faker.person.sex() === 'female' ? 'أنثى' : 'ذكر',
+            phone: faker.phone.number(),
+            address: `${faker.location.city()}, ${faker.location.streetAddress()}`,
+            avatarUrl: `https://placehold.co/40x40.png?text=${name.charAt(0)}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        const patientRef = await db.collection('patients').add(patientData);
+        patients.push({ id: patientRef.id, ...patientData });
+        console.log(`Created patient: ${patientData.name}`);
+    }
+
+    // 4. Seed Appointments
+    for (let i = 0; i < 25; i++) {
+        const patient = patients[Math.floor(Math.random() * patients.length)];
+        const doctor = doctorIds[Math.floor(Math.random() * doctorIds.length)];
+        const statuses = ['Scheduled', 'Waiting', 'Completed', 'Follow-up'];
+        const appointmentData = {
             patientId: patient.id,
             patientName: patient.name,
             doctorId: doctor.id,
             doctorName: `د. ${doctor.name}`,
             doctorSpecialty: doctor.specialty,
-            dateTime: appointmentDate.toISOString(),
-            status: status
-        });
+            dateTime: faker.date.recent({ days: 30 }).toISOString(),
+            status: statuses[Math.floor(Math.random() * statuses.length)],
+        };
+        await db.collection('appointments').add(appointmentData);
+    }
+    console.log('Created 25 appointments.');
 
-        // Create a transaction for completed appointments
-        if (status === 'Completed' && doctor.servicePrice) {
-            const transactionRef = doc(collection(db, "transactions"));
-            newBatch.set(transactionRef, {
-                patientId: patient.id,
-                patientName: patient.name,
-                date: Timestamp.fromDate(appointmentDate),
+    // 5. Seed Transactions (based on completed appointments)
+    const completedAppointments = await db.collection('appointments').where('status', '==', 'Completed').get();
+    for (const doc of completedAppointments.docs) {
+        const appointment = doc.data();
+        const doctor = doctorIds.find(d => d.id === appointment.doctorId);
+        if (doctor && doctor.servicePrice) {
+            await db.collection('transactions').add({
+                patientId: appointment.patientId,
+                patientName: appointment.patientName,
+                date: admin.firestore.Timestamp.fromDate(new Date(appointment.dateTime)),
                 amount: doctor.servicePrice,
                 status: 'Success',
-                service: `${doctor.specialty} Consultation`
+                service: `${doctor.specialty} Consultation`,
             });
         }
     }
+    console.log(`Created ${completedAppointments.size} transactions.`);
     
-     // 5. Seed Inbox Messages
-    console.log("Seeding inbox messages...");
-    if (adminId && receptionistId) {
-        const inboxRef1 = doc(collection(db, "inboxMessages"));
-        newBatch.set(inboxRef1, {
-            from: "النظام",
-            fromId: "system",
-            title: "مرحباً بك في صحة تك!",
-            content: "مرحباً بك في نظام صحة تك. لوحة التحكم هذه مصممة لمساعدتك في إدارة عيادتك بكفاءة. تفقد الأقسام المختلفة للبدء.",
-            timestamp: serverTimestamp(),
-            read: false,
-            recipientId: adminId // Send to admin
-        });
-        
-        const inboxRef2 = doc(collection(db, "inboxMessages"));
-        newBatch.set(inboxRef2, {
-            from: "د. علي الأحمد",
-            fromId: doctorId,
-            title: "استفسار بخصوص المريض محمد قائد",
-            content: "يرجى مراجعة نتائج التحاليل الأخيرة للمريض محمد قائد وتحديد موعد للمتابعة في أقرب وقت ممكن.",
-            timestamp: serverTimestamp(),
-            read: true,
-            recipientId: receptionistId // Send to receptionist
+    // 6. Seed Inbox Messages
+    const inboxMessages = [
+        { from: 'نظام صحة تك', fromId: 'system', title: 'أهلاً بك في صحة تك!', content: 'مرحباً بك في نظام إدارة العيادات الذكي. نحن هنا لمساعدتك على تنظيم عملك بفعالية.', read: false },
+        { from: 'فريق الدعم', fromId: 'support', title: 'تحديثات جديدة في النظام', content: 'لقد قمنا بإضافة ميزات جديدة لتحسين تجربتك، بما في ذلك الدردشة المباشرة والتقارير المتقدمة.', read: true },
+    ];
+
+    for (const msg of inboxMessages) {
+        await db.collection('inboxMessages').add({
+            ...msg,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
     }
+    console.log('Seeded inbox messages.');
 
-
-    await newBatch.commit();
-    console.log("Appointments, Transactions, and Inbox Messages committed.");
-
-    console.log("Database seeding completed successfully!");
-    process.exit(0);
+    console.log('Database seeding completed successfully.');
 }
 
-seed().catch((error) => {
-    console.error("Error seeding database:", error);
-    process.exit(1);
-});
+async function main() {
+  const { db, auth } = await initializeFirebase();
+  await clearAllData(db, auth);
+  await seedDatabase(db, auth);
+}
+
+main().catch((e) => console.error(e));

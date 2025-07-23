@@ -16,4 +16,4 @@ backend:
       # Set this to the project ID of the Firebase project that you're connecting to.
       # If you don't specify a project ID, App Hosting connects to services
       # in the same project.
-      projectId: peppy-strategy-685
+      projectId: sehatech-519pg
