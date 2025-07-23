@@ -11,8 +11,7 @@ const firebaseConfig = {
   projectId: "sehatech-519pg",
   storageBucket: "sehatech-519pg.appspot.com",
   messagingSenderId: "289549478988",
-  appId: "1:289549478988:web:be08211a23c1706bee58e9",
-  measurementId: "G-WY5B4QWGHL"
+  appId: "1:289549478988:web:be08211a23c1706bee58e9"
 };
 
 // Initialize Firebase
